@@ -11,6 +11,10 @@ from prep_pilot.services.evaluation_engine import (
     EvaluationEngineError,
     DimensionEvaluationResponse,
 )
+from prep_pilot.services.feedback_generator import (
+    FeedbackGenerator,
+    FeedbackGenerationError,
+)
 from prep_pilot.services.jd_parser import (
     JobDescriptionParser,
     JDParserError,
@@ -31,6 +35,13 @@ from prep_pilot.services.session_manager import (
     NextAction,
     NextActionType,
 )
+from prep_pilot.services.voice_service import (
+    VoiceService,
+    VoiceServiceError,
+    VoiceUnavailableError,
+    AudioDurationError,
+    UnrecognizableAudioError,
+)
 
 __all__ = [
     "LLMClient",
@@ -40,6 +51,8 @@ __all__ = [
     "EvaluationEngine",
     "EvaluationEngineError",
     "DimensionEvaluationResponse",
+    "FeedbackGenerator",
+    "FeedbackGenerationError",
     "JobDescriptionParser",
     "JDParserError",
     "JDExtractionError",
@@ -55,4 +68,9 @@ __all__ = [
     "InvalidStateError",
     "NextAction",
     "NextActionType",
+    "VoiceService",
+    "VoiceServiceError",
+    "VoiceUnavailableError",
+    "AudioDurationError",
+    "UnrecognizableAudioError",
 ]

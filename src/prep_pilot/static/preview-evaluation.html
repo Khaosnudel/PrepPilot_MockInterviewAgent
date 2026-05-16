@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Evaluation Preview</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; padding: 2rem; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .step { background: #1e293b; border-radius: 12px; padding: 2rem; }
+        h2 { color: #38bdf8; margin-bottom: 1rem; font-size: 1.3rem; }
+        h3 { color: var(--headingColor, #38bdf8); margin-bottom: 0.75rem; font-size: 1.1rem; }
+        .score-grid { display: grid; grid-template-columns: var(--gridCols, 1fr 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+        .score-card { background: var(--cardBg, #0f172a); border: 1px solid var(--cardBorder, #334155); border-radius: 8px; padding: var(--cardPadding, 1.25rem); text-align: center; }
+        .score-card .score { font-size: var(--scoreFontSize, 2.5rem); font-weight: 700; color: var(--scoreColor, #38bdf8); }
+        .score-card .label { font-size: 0.8rem; color: #94a3b8; margin-top: 0.25rem; }
+        .score-card.relevancy { border-color: var(--relevancyColor, #f59e0b); }
+        .score-card.relevancy .score { color: var(--relevancyColor, #f59e0b); }
+        .feedback-item { background: #0f172a; border-left: 3px solid var(--feedbackBorder, #2563eb); padding: var(--feedbackPadding, 1rem); margin-bottom: 0.75rem; border-radius: 0 8px 8px 0; line-height: 1.5; }
+        .feedback-item strong { color: var(--headingColor, #38bdf8); }
+        .improved-answer { background: #0f2e1a; border-left: 3px solid #22c55e; padding: 1rem; margin-bottom: 0.75rem; border-radius: 0 8px 8px 0; }
+        .original-answer { background: #2e1a0f; border-left: 3px solid #f97316; padding: 1rem; margin-bottom: 0.75rem; border-radius: 0 8px 8px 0; }
+        button { background: #2563eb; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-size: 1rem; cursor: pointer; font-weight: 600; width: 100%; margin-top: 1.5rem; }
+        .section-block { margin-bottom: 1.5rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="step">
+            <h2>Interview Complete!</h2>
+
+            <div class="section-block" id="sec-readiness">
+                <h3>Interview Readiness Score</h3>
+                <div class="score-grid">
+                    <div class="score-card"><div class="score">8</div><div class="label">Clarity of Communication</div></div>
+                    <div class="score-card"><div class="score">7</div><div class="label">Technical Accuracy</div></div>
+                    <div class="score-card"><div class="score">6</div><div class="label">STAR Method</div></div>
+                    <div class="score-card"><div class="score">9</div><div class="label">Overall Relevancy</div></div>
+                </div>
+            </div>
+
+            <div class="section-block" id="sec-relevancy">
+                <div class="score-card relevancy" style="max-width:200px; margin-bottom:1rem;">
+                    <div class="score">8</div>
+                    <div class="label">Resume Relevancy</div>
+                </div>
+            </div>
+
+            <div class="section-block" id="sec-reasoning">
+                <h3>Score Reasoning</h3>
+                <div class="feedback-item"><strong>Clarity (8/10):</strong> Responses were well-structured with clear logical flow. Minor filler words detected but overall concise.</div>
+                <div class="feedback-item"><strong>Technical Accuracy (7/10):</strong> Technical claims were accurate. Could benefit from more specific metrics and implementation details.</div>
+                <div class="feedback-item"><strong>STAR Method (6/10):</strong> Situation and Action were clear, but Task and Result components were sometimes missing or vague.</div>
+                <div class="feedback-item"><strong>Relevancy (9/10):</strong> All responses directly addressed the questions asked with minimal tangents.</div>
+            </div>
+
+            <div class="section-block" id="sec-suggestions">
+                <h3>Improvement Suggestions</h3>
+                <div class="feedback-item"><strong>Clarity:</strong> Continue structuring responses with clear opening statements. Reduce filler phrases like "basically" and "kind of".</div>
+                <div class="feedback-item"><strong>Technical Accuracy:</strong> Include specific metrics (latency improvements, throughput numbers) to strengthen technical claims.</div>
+                <div class="feedback-item"><strong>STAR Method:</strong> Always conclude with measurable Results. Quantify impact where possible (e.g., "reduced deploy time by 60%").</div>
+                <div class="feedback-item"><strong>Relevancy:</strong> Strong performance. Keep answers focused on the specific question asked.</div>
+            </div>
+
+            <div class="section-block" id="sec-improved">
+                <h3>Improved Answers</h3>
+                <div style="margin-bottom:1rem;">
+                    <div style="color:#94a3b8; font-size:0.85rem; margin-bottom:0.5rem;">Q1: Tell me about your experience building microservices.</div>
+                    <div class="original-answer"><strong>Your answer:</strong> I've built several microservices using FastAPI and Python at TechCorp...</div>
+                    <div class="improved-answer"><strong>Improved:</strong> "At TechCorp, I architected and built 12 microservices using FastAPI, reducing our monolith's deployment time from 45 minutes to 8 minutes. I implemented async patterns that handled 10K concurrent requests with p99 latency under 200ms."</div>
+                </div>
+            </div>
+
+            <div class="section-block" id="sec-followups">
+                <h3>Follow-up Questions to Practice</h3>
+                <div class="feedback-item">How do you handle service-to-service communication failures in a microservices architecture?</div>
+                <div class="feedback-item">Can you walk me through your approach to database schema migrations with zero downtime?</div>
+                <div class="feedback-item">Tell me about a time you had to make a difficult tradeoff between performance and code maintainability.</div>
+            </div>
+
+            <button id="sec-newBtn">🔄 Start New Interview</button>
+        </div>
+    </div>
+    <script>
+        window.addEventListener('message', (event) => {
+            if (event.data && event.data.type === 'theme-update' && event.data.theme.evaluation) {
+                const e = event.data.theme.evaluation;
+                const root = document.documentElement.style;
+                if (e.colors) {
+                    root.setProperty('--scoreColor', e.colors.scoreColor);
+                    root.setProperty('--relevancyColor', e.colors.relevancyColor);
+                    root.setProperty('--cardBg', e.colors.cardBg);
+                    root.setProperty('--cardBorder', e.colors.cardBorder);
+                    root.setProperty('--feedbackBorder', e.colors.feedbackBorder);
+                    root.setProperty('--headingColor', e.colors.headingColor);
+                }
+                if (e.layout) {
+                    root.setProperty('--gridCols', e.layout.gridCols);
+                    root.setProperty('--cardPadding', e.layout.cardPadding);
+                    root.setProperty('--scoreFontSize', e.layout.scoreFontSize);
+                    root.setProperty('--feedbackPadding', e.layout.feedbackPadding);
+                }
+                if (e.sections !== undefined) {
+                    document.getElementById('sec-readiness').style.display = e.sections.showReadiness ? 'block' : 'none';
+                    document.getElementById('sec-relevancy').style.display = e.sections.showRelevancy ? 'block' : 'none';
+                    document.getElementById('sec-reasoning').style.display = e.sections.showReasoning ? 'block' : 'none';
+                    document.getElementById('sec-suggestions').style.display = e.sections.showSuggestions ? 'block' : 'none';
+                    document.getElementById('sec-improved').style.display = e.sections.showImproved ? 'block' : 'none';
+                    document.getElementById('sec-followups').style.display = e.sections.showFollowups ? 'block' : 'none';
+                    document.getElementById('sec-newBtn').style.display = e.sections.showNewBtn ? 'block' : 'none';
+                }
+            }
+        });
+    </script>
+</body>
+</html>

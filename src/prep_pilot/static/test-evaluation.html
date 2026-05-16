@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prep Pilot - Evaluation Test Page</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; padding: 2rem; }
+        .container { max-width: 900px; margin: 0 auto; }
+        h1 { font-size: 2rem; margin-bottom: 0.25rem; color: #f59e0b; }
+        h2 { font-size: 1.2rem; margin-bottom: 1.5rem; color: #94a3b8; }
+        .test-badge { display: inline-block; background: #92400e; color: #fbbf24; padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; margin-bottom: 1rem; }
+        .panel { background: #1e293b; border-radius: 12px; padding: 2rem; margin-bottom: 1.5rem; }
+        label { display: block; font-weight: 600; margin-bottom: 0.5rem; color: #cbd5e1; }
+        select, input { width: 100%; padding: 0.75rem; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: #e2e8f0; font-size: 1rem; margin-bottom: 1rem; }
+        button { background: #f59e0b; color: #0f172a; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-size: 1rem; cursor: pointer; font-weight: 700; }
+        button:hover { background: #d97706; }
+        button:disabled { background: #475569; color: #94a3b8; cursor: not-allowed; }
+        .btn-secondary { background: #475569; color: #e2e8f0; }
+        .btn-secondary:hover { background: #64748b; }
+        .score-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
+        .score-card { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 1.25rem; text-align: center; }
+        .score-card .score { font-size: 2.5rem; font-weight: 700; color: #38bdf8; }
+        .score-card .label { font-size: 0.8rem; color: #94a3b8; margin-top: 0.25rem; }
+        .score-card.relevancy { border-color: #f59e0b; }
+        .score-card.relevancy .score { color: #f59e0b; }
+        .feedback-section { margin-top: 1.5rem; }
+        .feedback-section h3 { color: #38bdf8; margin-bottom: 0.75rem; font-size: 1.1rem; }
+        .feedback-item { background: #0f172a; border-left: 3px solid #2563eb; padding: 1rem; margin-bottom: 0.75rem; border-radius: 0 8px 8px 0; line-height: 1.5; }
+        .feedback-item strong { color: #38bdf8; }
+        .status { padding: 0.5rem 1rem; border-radius: 6px; background: #1e3a5f; color: #7dd3fc; font-size: 0.85rem; margin-bottom: 1rem; display: inline-block; }
+        .error { background: #3b1219; color: #fca5a5; }
+        .qa-pair { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 1rem; margin-bottom: 0.75rem; }
+        .qa-pair .question { color: #38bdf8; font-weight: 600; margin-bottom: 0.5rem; }
+        .qa-pair .answer { color: #cbd5e1; font-style: italic; }
+        .tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; }
+        .tab { padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; background: #334155; color: #94a3b8; font-weight: 600; font-size: 0.9rem; border: none; }
+        .tab.active { background: #f59e0b; color: #0f172a; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .resume-info { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
+        .skill-tag { background: #1e3a5f; color: #7dd3fc; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.85rem; }
+        .improved-answer { background: #0f2e1a; border-left: 3px solid #22c55e; padding: 1rem; margin-bottom: 0.75rem; border-radius: 0 8px 8px 0; }
+        .original-answer { background: #2e1a0f; border-left: 3px solid #f97316; padding: 1rem; margin-bottom: 0.75rem; border-radius: 0 8px 8px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="test-badge">⚠️ Test / Dev Only — Not a Live Session</div>
+        <h1>🧪 Evaluation Test Page</h1>
+        <h2>Preview and adjust the evaluation UI with mock data</h2>
+
+        <!-- Controls -->
+        <div class="panel">
+            <label>Select Test Persona</label>
+            <select id="persona-select" onchange="loadPersona()">
+                <option value="0">John Doe — Software Engineer (3 yrs, Python/FastAPI/AWS)</option>
+                <option value="1">Sarah Chen — Data Scientist (5 yrs, ML/Python/SQL)</option>
+                <option value="2">Marcus Johnson — DevOps Engineer (4 yrs, AWS/Docker/K8s)</option>
+                <option value="3">Priya Patel — Frontend Developer (2 yrs, React/TypeScript)</option>
+            </select>
+            <div style="display: flex; gap: 1rem;">
+                <button onclick="renderEvaluation()">Render Evaluation</button>
+                <button class="btn-secondary" onclick="randomizeScores()">Randomize Scores</button>
+            </div>
+            <div id="test-status" style="margin-top: 1rem;"></div>
+        </div>
+
+        <!-- Resume Preview -->
+        <div class="panel" id="resume-panel">
+            <h3 style="color:#f59e0b; margin-bottom:1rem;">📄 Resume Data</h3>
+            <div id="resume-preview"></div>
+        </div>
+
+        <!-- Q&A Preview -->
+        <div class="panel" id="qa-panel">
+            <h3 style="color:#f59e0b; margin-bottom:1rem;">💬 Interview Q&A</h3>
+            <div id="qa-preview"></div>
+        </div>
+
+        <!-- Evaluation Results -->
+        <div class="panel" id="eval-panel" style="display:none;">
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('scores')">Scores</button>
+                <button class="tab" onclick="switchTab('feedback')">Feedback</button>
+                <button class="tab" onclick="switchTab('improved')">Improved Answers</button>
+                <button class="tab" onclick="switchTab('followup')">Follow-ups</button>
+            </div>
+
+            <div class="tab-content active" id="tab-scores">
+                <h3 style="margin-bottom:1rem;">Interview Readiness Score</h3>
+                <div class="score-grid" id="readiness-scores"></div>
+                <div id="relevancy-score"></div>
+                <div id="score-reasoning"></div>
+            </div>
+
+            <div class="tab-content" id="tab-feedback">
+                <h3 style="margin-bottom:1rem;">Improvement Suggestions</h3>
+                <div id="improvement-suggestions"></div>
+            </div>
+
+            <div class="tab-content" id="tab-improved">
+                <h3 style="margin-bottom:1rem;">Improved Answers</h3>
+                <div id="improved-answers"></div>
+            </div>
+
+            <div class="tab-content" id="tab-followup">
+                <h3 style="margin-bottom:1rem;">Follow-up Questions to Practice</h3>
+                <div id="followup-questions"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Mock Data ---
+        const personas = [
+            {
+                name: "John Doe",
+                role: "Software Engineer",
+                skills: ["Python", "FastAPI", "AWS", "Docker", "PostgreSQL"],
+                experiences: [{ title: "Software Engineer", company: "TechCorp", duration: "3 years", description: "Building microservices" }],
+                qualifications: ["BS Computer Science"],
+                questions: [
+                    { id: "q1", text: "Tell me about your experience building microservices with Python.", category: "technical" },
+                    { id: "q2", text: "Describe a time you had to debug a complex production issue.", category: "behavioral" },
+                    { id: "q3", text: "How do you approach designing a new API endpoint?", category: "situational" }
+                ],
+                answers: [
+                    "I've built several microservices using FastAPI and Python at TechCorp. We used Docker for containerization and deployed to AWS ECS. I focused on clean API design with proper error handling and async patterns.",
+                    "At TechCorp, our payment service went down during peak hours. I identified the issue was a database connection pool exhaustion. I implemented connection pooling limits and added circuit breakers, which resolved the issue within 30 minutes.",
+                    "I start by understanding the business requirement, then define the request/response schema. I consider error cases, write tests first, implement the endpoint, and document it with OpenAPI specs."
+                ]
+            },
+            {
+                name: "Sarah Chen",
+                role: "Data Scientist",
+                skills: ["Python", "Machine Learning", "SQL", "TensorFlow", "Pandas", "Scikit-learn"],
+                experiences: [{ title: "Senior Data Scientist", company: "DataCo", duration: "5 years", description: "Built recommendation systems and NLP models" }],
+                qualifications: ["MS Data Science", "AWS ML Specialty"],
+                questions: [
+                    { id: "q1", text: "Explain your approach to building a recommendation system.", category: "technical" },
+                    { id: "q2", text: "Tell me about a time your model didn't perform as expected in production.", category: "behavioral" },
+                    { id: "q3", text: "How would you handle a dataset with significant class imbalance?", category: "technical" }
+                ],
+                answers: [
+                    "At DataCo, I built a collaborative filtering recommendation engine using matrix factorization. We combined it with content-based features using a hybrid approach. The system improved click-through rates by 23%.",
+                    "Our NLP sentiment model had great offline metrics but poor production performance. I discovered the training data didn't represent our actual user language patterns. I retrained with production data samples and added monitoring for data drift.",
+                    "I'd use a combination of techniques: SMOTE for oversampling the minority class, adjusting class weights in the loss function, and using stratified cross-validation. I'd also consider if the business metric should be precision or recall focused."
+                ]
+            },
+            {
+                name: "Marcus Johnson",
+                role: "DevOps Engineer",
+                skills: ["AWS", "Docker", "Kubernetes", "Terraform", "CI/CD", "Python", "Linux"],
+                experiences: [{ title: "DevOps Engineer", company: "CloudScale", duration: "4 years", description: "Infrastructure automation and CI/CD pipelines" }],
+                qualifications: ["AWS Solutions Architect", "CKA Certified"],
+                questions: [
+                    { id: "q1", text: "How do you approach infrastructure as code for a new project?", category: "technical" },
+                    { id: "q2", text: "Describe a time you reduced deployment time significantly.", category: "behavioral" },
+                    { id: "q3", text: "How would you handle a security incident in a Kubernetes cluster?", category: "situational" }
+                ],
+                answers: [
+                    "I use Terraform for all infrastructure provisioning. I organize modules by service, use remote state with locking, and implement a PR-based workflow where infrastructure changes are reviewed before applying.",
+                    "At CloudScale, deployments took 45 minutes. I implemented parallel builds, Docker layer caching, and canary deployments. We got it down to 8 minutes with zero-downtime releases.",
+                    "First, I'd isolate the affected pods using network policies. Then investigate logs and audit trails. I'd rotate any compromised credentials, patch the vulnerability, and conduct a post-mortem to prevent recurrence."
+                ]
+            },
+            {
+                name: "Priya Patel",
+                role: "Frontend Developer",
+                skills: ["React", "TypeScript", "CSS", "Next.js", "Testing Library", "Figma"],
+                experiences: [{ title: "Frontend Developer", company: "DesignHub", duration: "2 years", description: "Building accessible web applications" }],
+                qualifications: ["BS Information Technology"],
+                questions: [
+                    { id: "q1", text: "How do you ensure accessibility in your React components?", category: "technical" },
+                    { id: "q2", text: "Tell me about a time you improved application performance.", category: "behavioral" },
+                    { id: "q3", text: "How would you approach migrating a large codebase from JavaScript to TypeScript?", category: "situational" }
+                ],
+                answers: [
+                    "I follow WCAG 2.1 guidelines. I use semantic HTML, ARIA attributes where needed, ensure keyboard navigation works, and test with screen readers. I also use axe-core in our CI pipeline to catch issues early.",
+                    "Our main dashboard had a 4-second load time. I implemented code splitting with React.lazy, optimized images, added virtualization for long lists, and memoized expensive computations. Load time dropped to 1.2 seconds.",
+                    "I'd do it incrementally. Start by adding TypeScript config with strict mode off, rename files one module at a time starting from leaf components, add types gradually, then tighten the config as coverage improves."
+                ]
+            }
+        ];
+
+        let currentScores = null;
+
+        function loadPersona() {
+            const idx = document.getElementById('persona-select').value;
+            const p = personas[idx];
+
+            // Render resume
+            let resumeHtml = `<div class="resume-info">${p.skills.map(s => `<span class="skill-tag">${s}</span>`).join('')}</div>`;
+            resumeHtml += p.experiences.map(e => `<div style="color:#94a3b8;"><strong>${e.title}</strong> at ${e.company} (${e.duration}) — ${e.description}</div>`).join('');
+            if (p.qualifications.length) {
+                resumeHtml += `<div style="margin-top:0.5rem; color:#94a3b8;">Qualifications: ${p.qualifications.join(', ')}</div>`;
+            }
+            document.getElementById('resume-preview').innerHTML = resumeHtml;
+
+            // Render Q&A
+            let qaHtml = '';
+            for (let i = 0; i < p.questions.length; i++) {
+                qaHtml += `<div class="qa-pair"><div class="question">Q${i+1} [${p.questions[i].category}]: ${p.questions[i].text}</div><div class="answer">"${p.answers[i]}"</div></div>`;
+            }
+            document.getElementById('qa-preview').innerHTML = qaHtml;
+
+            document.getElementById('eval-panel').style.display = 'none';
+        }
+
+        function generateMockScores() {
+            const rand = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+            return {
+                clarity: rand(5, 10),
+                technical: rand(5, 10),
+                star: rand(3, 9),
+                relevancy: rand(5, 10),
+                resumeRelevancy: rand(5, 10)
+            };
+        }
+
+        function randomizeScores() {
+            currentScores = generateMockScores();
+            renderEvaluation();
+        }
+
+        function renderEvaluation() {
+            const idx = document.getElementById('persona-select').value;
+            const p = personas[idx];
+
+            if (!currentScores) currentScores = generateMockScores();
+
+            // Readiness scores
+            document.getElementById('readiness-scores').innerHTML = `
+                <div class="score-card"><div class="score">${currentScores.clarity}</div><div class="label">Clarity of Communication</div></div>
+                <div class="score-card"><div class="score">${currentScores.technical}</div><div class="label">Technical Accuracy</div></div>
+                <div class="score-card"><div class="score">${currentScores.star}</div><div class="label">STAR Method</div></div>
+                <div class="score-card"><div class="score">${currentScores.relevancy}</div><div class="label">Overall Relevancy</div></div>
+            `;
+
+            // Resume relevancy
+            document.getElementById('relevancy-score').innerHTML = `
+                <div class="score-card relevancy" style="max-width:200px; margin-bottom:1.5rem;">
+                    <div class="score">${currentScores.resumeRelevancy}</div>
+                    <div class="label">Resume Relevancy</div>
+                </div>
+            `;
+
+            // Score reasoning
+            const dimensions = ['Clarity of Communication', 'Technical Accuracy', 'STAR Method', 'Overall Relevancy'];
+            const scores = [currentScores.clarity, currentScores.technical, currentScores.star, currentScores.relevancy];
+            let reasoningHtml = '<h3 style="margin-top:1.5rem; margin-bottom:0.75rem;">Score Reasoning</h3>';
+            dimensions.forEach((dim, i) => {
+                reasoningHtml += `<div class="feedback-item"><strong>${dim} (${scores[i]}/10):</strong> The candidate demonstrated ${scores[i] >= 7 ? 'strong' : 'moderate'} ${dim.toLowerCase()} in their responses. ${scores[i] >= 8 ? 'Responses were well-structured and specific.' : 'Some areas could benefit from more specificity and structure.'}</div>`;
+            });
+            document.getElementById('score-reasoning').innerHTML = reasoningHtml;
+
+            // Improvement suggestions
+            let suggestionsHtml = '';
+            dimensions.forEach((dim, i) => {
+                suggestionsHtml += `<div class="feedback-item"><strong>${dim}:</strong> ${scores[i] >= 7 ? 'Continue providing specific examples. Consider adding quantifiable metrics to strengthen your responses further.' : 'Try to structure responses more clearly. Use the STAR method and include specific metrics or outcomes.'}</div>`;
+            });
+            document.getElementById('improvement-suggestions').innerHTML = suggestionsHtml;
+
+            // Improved answers
+            let improvedHtml = '';
+            for (let i = 0; i < p.questions.length; i++) {
+                improvedHtml += `
+                    <div style="margin-bottom:1.5rem;">
+                        <div style="color:#94a3b8; font-size:0.85rem; margin-bottom:0.5rem;">Q${i+1}: ${p.questions[i].text}</div>
+                        <div class="original-answer"><strong>Your answer:</strong> ${p.answers[i]}</div>
+                        <div class="improved-answer"><strong>Improved version:</strong> A stronger response would include specific metrics (e.g., "reduced latency by 40%"), name the technologies used, and clearly state the outcome and business impact of your actions.</div>
+                    </div>
+                `;
+            }
+            document.getElementById('improved-answers').innerHTML = improvedHtml;
+
+            // Follow-up questions
+            const followups = [
+                "Can you walk me through a specific technical decision you made and the tradeoffs involved?",
+                "How do you prioritize tasks when multiple deadlines are competing?",
+                "Tell me about a time you disagreed with a teammate's approach. How did you resolve it?",
+                "What's a recent technology you learned and how did you apply it?"
+            ];
+            document.getElementById('followup-questions').innerHTML = followups.map(q => `<div class="feedback-item">${q}</div>`).join('');
+
+            document.getElementById('eval-panel').style.display = 'block';
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // Load first persona on page load
+        loadPersona();
+    </script>
+</body>
+</html>

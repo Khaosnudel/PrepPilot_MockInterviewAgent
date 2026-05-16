@@ -130,15 +130,15 @@ This plan implements the Prep Pilot AI-powered mock interview agent in Python us
     - Test role list availability check
     - _Requirements: 1.3, 2.4_
 
-- [ ] 7. Implement evaluation engine
-  - [-] 7.1 Implement interview readiness evaluation
+- [x] 7. Implement evaluation engine
+  - [x] 7.1 Implement interview readiness evaluation
     - Create `src/prep_pilot/services/evaluation_engine.py` with `EvaluationEngine` class
     - Implement `async evaluate_readiness()` that scores across 4 dimensions: clarity_of_communication, technical_accuracy, star_method_adherence, overall_response_relevancy
     - Each score is an integer in [1, 10]
     - Use LLM client with dimension-specific prompts for evaluation
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5_
 
-  - [-] 7.2 Implement resume relevancy evaluation
+  - [x] 7.2 Implement resume relevancy evaluation
     - Implement `async evaluate_resume_relevancy()` that scores alignment between responses and resume content
     - Generate per-question reasoning with supported_claims and unsupported_claims lists
     - Assign default score of 5 when no comparable claims exist
@@ -164,11 +164,11 @@ This plan implements the Prep Pilot AI-powered mock interview agent in Python us
     - Verify per_question_reasoning has one entry per answered question with non-empty reasoning and present supported/unsupported claims lists
     - **Validates: Requirements 5.4**
 
-- [~] 8. Checkpoint - Ensure all tests pass
+- [x] 8. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 9. Implement feedback generator
-  - [~] 9.1 Implement feedback generator
+- [x] 9. Implement feedback generator
+  - [x] 9.1 Implement feedback generator
     - Create `src/prep_pilot/services/feedback_generator.py` with `FeedbackGenerator` class
     - Implement `async generate()` that produces a `FeedbackReport` from session data
     - Report must contain: N improved answers (one per question), 2-5 follow-up questions, 4 score reasoning entries, ≥4 improvement suggestions (≥1 per dimension)
@@ -181,8 +181,8 @@ This plan implements the Prep Pilot AI-powered mock interview agent in Python us
     - Verify report contains exactly N improved answers, 2-5 follow-up questions, exactly 4 score reasoning entries, ≥4 improvement suggestions
     - **Validates: Requirements 6.2, 6.3, 6.4, 6.5**
 
-- [ ] 10. Implement voice service
-  - [~] 10.1 Implement voice service
+- [x] 10. Implement voice service
+  - [x] 10.1 Implement voice service
     - Create `src/prep_pilot/services/voice_service.py` with `VoiceService` class
     - Implement `async transcribe()` that converts audio to text within 10-second timeout
     - Implement `async synthesize()` that converts text to audio output
@@ -203,8 +203,8 @@ This plan implements the Prep Pilot AI-powered mock interview agent in Python us
     - Test dual output (voice + text) delivery
     - _Requirements: 7.4, 7.5, 7.6_
 
-- [ ] 11. Implement FastAPI REST endpoints and WebSocket handler
-  - [~] 11.1 Implement REST API endpoints
+- [x] 11. Implement FastAPI REST endpoints and WebSocket handler
+  - [x] 11.1 Implement REST API endpoints
     - Create `src/prep_pilot/api/routes.py` with FastAPI router
     - Implement `POST /sessions` - create new session
     - Implement `POST /sessions/{id}/resume` - upload and parse resume
@@ -218,7 +218,7 @@ This plan implements the Prep Pilot AI-powered mock interview agent in Python us
     - Wire all endpoints to SessionManager and related services
     - _Requirements: 1.1, 1.2, 1.3, 2.1, 2.5, 3.1, 3.2, 7.2_
 
-  - [~] 11.2 Implement WebSocket handler for voice interaction
+  - [x] 11.2 Implement WebSocket handler for voice interaction
     - Create `src/prep_pilot/api/websocket.py` with WebSocket endpoint
     - Implement `WS /sessions/{id}/voice` - handle real-time voice streaming
     - Accept audio data, pass to VoiceService for transcription
@@ -226,7 +226,7 @@ This plan implements the Prep Pilot AI-powered mock interview agent in Python us
     - Handle connection lifecycle (open, message, close, error)
     - _Requirements: 7.1, 7.3, 7.4_
 
-  - [~] 11.3 Create FastAPI application entry point
+  - [x] 11.3 Create FastAPI application entry point
     - Create `src/prep_pilot/main.py` with FastAPI app instance
     - Register all routers and WebSocket handlers
     - Configure CORS, error handlers, and middleware
@@ -248,7 +248,7 @@ This plan implements the Prep Pilot AI-powered mock interview agent in Python us
     - Test insufficient responses handling
     - _Requirements: 1.3, 1.4, 3.3, 4.6, 6.6, 7.5_
 
-- [~] 13. Final checkpoint - Ensure all tests pass
+- [x] 13. Final checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
 ## Notes

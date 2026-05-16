@@ -1,0 +1,44 @@
+{
+  "colors": {
+    "background": "#0f172a",
+    "surface": "#1e293b",
+    "primary": "#2563eb",
+    "primaryHover": "#1d4ed8",
+    "accent": "#38bdf8",
+    "text": "#e2e8f0",
+    "textMuted": "#94a3b8",
+    "textLabel": "#cbd5e1",
+    "border": "#334155",
+    "error": "#fca5a5",
+    "errorBg": "#3b1219",
+    "success": "#22c55e",
+    "successBg": "#0f2e1a",
+    "warning": "#f59e0b",
+    "statusBg": "#1e3a5f",
+    "statusText": "#7dd3fc",
+    "skillTag": "#1e3a5f",
+    "skillTagText": "#7dd3fc",
+    "restart": "#dc2626",
+    "restartHover": "#b91c1c"
+  },
+  "layout": {
+    "maxWidth": "800px",
+    "borderRadius": "12px",
+    "panelPadding": "2rem",
+    "buttonRadius": "8px"
+  },
+  "sections": {
+    "showHeader": true,
+    "showRestartButton": true,
+    "showProgressBar": true,
+    "showQuestionCategory": true,
+    "showResumeRelevancy": true,
+    "showImprovedAnswers": true,
+    "showFollowUpQuestions": true,
+    "showScoreReasoning": true
+  },
+  "header": {
+    "title": "🎯 Prep Pilot",
+    "subtitle": "AI Mock Interview Agent"
+  }
+}

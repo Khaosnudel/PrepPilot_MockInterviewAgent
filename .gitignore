@@ -48,3 +48,53 @@ desktop.ini
 # Uploaded files (user data - never commit)
 uploads/
 temp/
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Environment variables and secrets
+.env
+.env.local
+.env.production
+*.pem
+*.key
+
+# Testing
+.pytest_cache/
+htmlcov/
+.coverage
+coverage.xml
+
+# OS files
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# Distribution
+*.whl
+*.tar.gz
+
+# Logs
+*.log
+
+# Uploaded files (user data - never commit)
+uploads/
+temp/

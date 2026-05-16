@@ -59,8 +59,12 @@ class LLMClient:
         # Create async httpx client for the openai library
         http_client = httpx.AsyncClient(timeout=httpx.Timeout(timeout))
 
+        # Use a placeholder key if none provided so the client can initialize
+        # without crashing. Actual API calls will fail with a clear auth error.
+        init_key = self._api_key if self._api_key else "sk-placeholder-not-set"
+
         self._client = AsyncOpenAI(
-            api_key=self._api_key,
+            api_key=init_key,
             http_client=http_client,
             base_url=base_url,
             timeout=timeout,
@@ -70,6 +74,20 @@ class LLMClient:
     def model(self) -> str:
         """Return the configured model name."""
         return self._model
+
+    def _check_api_key(self) -> None:
+        """Verify that a real API key is configured before making calls.
+
+        Raises:
+            LLMClientError: If no valid API key is set.
+        """
+        if not self._api_key or self._api_key == "sk-placeholder-not-set":
+            raise LLMClientError(
+                "OpenAI API key is not configured. "
+                "Set the OPENAI_API_KEY environment variable in your .env file "
+                "or pass it directly to LLMClient(api_key='...'). "
+                "Get a key at https://platform.openai.com/api-keys"
+            )
 
     async def generate(
         self,
@@ -93,6 +111,7 @@ class LLMClient:
             LLMConnectionError: If the service is unreachable after retries.
             LLMClientError: For other unrecoverable errors.
         """
+        self._check_api_key()
         messages = self._build_messages(prompt, system_prompt)
 
         response = await self._call_with_retry(
@@ -133,6 +152,7 @@ class LLMClient:
         if schema is None:
             raise ValueError("schema parameter is required for generate_structured()")
 
+        self._check_api_key()
         messages = self._build_messages(prompt, system_prompt)
 
         response = await self._call_with_retry(
