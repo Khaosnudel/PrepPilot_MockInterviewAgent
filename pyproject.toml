@@ -34,39 +34,3 @@ asyncio_mode = "auto"
 
 [tool.setuptools.package-dir]
 "" = "src"
-[build-system]
-requires = ["setuptools>=68.0", "wheel"]
-build-backend = "setuptools.build_meta"
-
-[project]
-name = "prep-pilot"
-version = "0.1.0"
-description = "AI-powered mock interview agent that conducts personalized interview sessions"
-requires-python = ">=3.10"
-dependencies = [
-    "fastapi==0.136.1",
-    "uvicorn==0.47.0",
-    "pydantic==2.13.4",
-    "openai==2.36.0",
-    "python-multipart==0.0.28",
-    "python-docx==1.2.0",
-    "PyPDF2==3.0.1",
-]
-
-[project.optional-dependencies]
-dev = [
-    "hypothesis==6.152.7",
-    "pytest==9.0.3",
-    "pytest-asyncio==1.3.0",
-    "pytest-mock==3.15.1",
-]
-
-[tool.setuptools.packages.find]
-where = ["src"]
-
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-asyncio_mode = "auto"
-
-[tool.setuptools.package-dir]
-"" = "src"

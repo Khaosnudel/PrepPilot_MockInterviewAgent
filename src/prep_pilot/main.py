@@ -106,22 +106,122 @@ async def serve_preview_evaluation():
 
 @app.get("/theme", status_code=status.HTTP_200_OK)
 async def get_theme():
-    """Get the current theme configuration."""
+    """Get the current theme configuration including elements data."""
     import json
     theme_file = _static_dir / "theme.json"
     if theme_file.exists():
-        return JSONResponse(content=json.loads(theme_file.read_text()))
-    return JSONResponse(content={})
+        try:
+            theme_data = json.loads(theme_file.read_text())
+        except (json.JSONDecodeError, OSError):
+            theme_data = {}
+        # Ensure elements key exists; fall back to empty array if invalid
+        if "elements" not in theme_data or not isinstance(theme_data.get("elements"), list):
+            theme_data["elements"] = []
+        else:
+            # Validate each element; keep only valid ones
+            theme_data["elements"] = _validate_elements(theme_data["elements"])
+        return JSONResponse(content=theme_data)
+    return JSONResponse(content={"elements": []})
 
 
 @app.put("/theme", status_code=status.HTTP_200_OK)
 async def save_theme(request: Request):
-    """Save theme configuration to theme.json."""
+    """Save theme configuration including elements to theme.json."""
     import json
     theme_data = await request.json()
+    # Validate elements array if present
+    if "elements" in theme_data:
+        if not isinstance(theme_data["elements"], list):
+            raise HTTPException(
+                status_code=422,
+                detail="'elements' must be an array",
+            )
+        theme_data["elements"] = _validate_elements(theme_data["elements"])
+    else:
+        theme_data["elements"] = []
     theme_file = _static_dir / "theme.json"
     theme_file.write_text(json.dumps(theme_data, indent=2))
     return {"status": "saved"}
+
+
+def _validate_elements(elements: list) -> list:
+    """Validate element data structures, returning only valid elements.
+
+    Each element must have the required base fields (type, x, y, width, height,
+    opacity, zIndex) plus type-specific fields. Invalid elements are silently
+    dropped to handle corrupted data gracefully.
+    """
+    valid_elements = []
+    for element in elements:
+        if not isinstance(element, dict):
+            continue
+        if _is_valid_element(element):
+            valid_elements.append(element)
+    return valid_elements
+
+
+def _is_valid_element(element: dict) -> bool:
+    """Check if an element has a valid structure based on its type."""
+    # Required base fields for all element types
+    base_fields = {"type", "x", "y", "width", "height", "opacity", "zIndex"}
+    if not base_fields.issubset(element.keys()):
+        return False
+
+    element_type = element.get("type")
+    if element_type not in ("icon", "image", "text"):
+        return False
+
+    # Validate numeric base fields
+    try:
+        x = element["x"]
+        y = element["y"]
+        width = element["width"]
+        height = element["height"]
+        opacity = element["opacity"]
+        z_index = element["zIndex"]
+
+        # x and y must be numeric
+        if not isinstance(x, (int, float)) or not isinstance(y, (int, float)):
+            return False
+        # width and height must be positive numbers
+        if not isinstance(width, (int, float)) or width <= 0:
+            return False
+        if not isinstance(height, (int, float)) or height <= 0:
+            return False
+        # opacity must be between 0.0 and 1.0
+        if not isinstance(opacity, (int, float)) or opacity < 0.0 or opacity > 1.0:
+            return False
+        # zIndex must be an integer (or integer-valued float)
+        if not isinstance(z_index, (int, float)):
+            return False
+    except (TypeError, KeyError):
+        return False
+
+    # Type-specific validation
+    if element_type == "icon":
+        # Icons require iconId (string) and color (string)
+        if "iconId" not in element or not isinstance(element["iconId"], str):
+            return False
+        if "color" not in element or not isinstance(element["color"], str):
+            return False
+
+    elif element_type == "image":
+        # Images require source (string)
+        if "source" not in element or not isinstance(element["source"], str):
+            return False
+
+    elif element_type == "text":
+        # Text requires content (string), fontSize (number), fontWeight (string), color (string)
+        if "content" not in element or not isinstance(element["content"], str):
+            return False
+        if "fontSize" not in element or not isinstance(element["fontSize"], (int, float)):
+            return False
+        if "fontWeight" not in element or element["fontWeight"] not in ("normal", "bold"):
+            return False
+        if "color" not in element or not isinstance(element["color"], str):
+            return False
+
+    return True
 
 
 @app.get("/health", status_code=status.HTTP_200_OK)
