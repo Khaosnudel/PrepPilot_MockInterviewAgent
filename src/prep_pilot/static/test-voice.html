@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prep Pilot - Voice Test Page</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; padding: 2rem; }
+        .container { max-width: 850px; margin: 0 auto; }
+        h1 { font-size: 2rem; color: #a78bfa; margin-bottom: 0.25rem; }
+        h2 { font-size: 1.1rem; color: #94a3b8; margin-bottom: 1.5rem; }
+        .test-badge { display: inline-block; background: #4c1d95; color: #c4b5fd; padding: 0.25rem: 0.75rem; border-radius: 4px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; margin-bottom: 1rem; padding: 0.25rem 0.75rem; }
+        .panel { background: #1e293b; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; }
+        .panel-title { font-size: 0.9rem; font-weight: 700; color: #a78bfa; text-transform: uppercase; margin-bottom: 1rem; letter-spacing: 0.05em; }
+        button { background: #7c3aed; color: white; border: none; padding: 0.7rem 1.4rem; border-radius: 8px; font-size: 0.95rem; cursor: pointer; font-weight: 600; }
+        button:hover { background: #6d28d9; }
+        button:disabled { background: #475569; cursor: not-allowed; }
+        .btn-red { background: #dc2626; }
+        .btn-red:hover { background: #b91c1c; }
+        .btn-green { background: #16a34a; }
+        .btn-green:hover { background: #15803d; }
+        .btn-secondary { background: #475569; }
+        .btn-secondary:hover { background: #64748b; }
+        select, input[type="text"], textarea { width: 100%; padding: 0.6rem; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: #e2e8f0; font-size: 0.95rem; margin-bottom: 0.75rem; }
+        textarea { min-height: 80px; resize: vertical; }
+        .status { padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.85rem; margin-top: 0.75rem; display: inline-block; }
+        .status-info { background: #1e3a5f; color: #7dd3fc; }
+        .status-success { background: #0f2e1a; color: #4ade80; }
+        .status-error { background: #3b1219; color: #fca5a5; }
+        .status-recording { background: #4c1d95; color: #c4b5fd; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+        .audio-player { margin-top: 0.75rem; width: 100%; }
+        .transcript-box { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 1rem; margin-top: 0.75rem; min-height: 60px; font-style: italic; color: #cbd5e1; }
+        .metrics { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; margin-top: 1rem; }
+        .metric { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 0.75rem; text-align: center; }
+        .metric .value { font-size: 1.5rem; font-weight: 700; color: #a78bfa; }
+        .metric .label { font-size: 0.75rem; color: #94a3b8; margin-top: 0.25rem; }
+        .log-area { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 1rem; max-height: 200px; overflow-y: auto; font-family: monospace; font-size: 0.8rem; color: #94a3b8; margin-top: 0.75rem; }
+        .log-entry { margin-bottom: 0.25rem; }
+        .log-entry.error { color: #fca5a5; }
+        .log-entry.success { color: #4ade80; }
+        .log-entry.info { color: #7dd3fc; }
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .voice-select { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
+        .voice-chip { padding: 0.4rem 0.8rem; border-radius: 20px; font-size: 0.8rem; cursor: pointer; border: 1px solid #334155; background: #0f172a; color: #94a3b8; }
+        .voice-chip.active { background: #7c3aed; color: white; border-color: #7c3aed; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="test-badge">⚠️ Test / Dev Only — Not a Live Session</div>
+        <h1>🎙️ Voice Interaction Test</h1>
+        <h2>Test STT (speech-to-text) and TTS (text-to-speech) independently</h2>
+
+        <!-- TTS Test Panel -->
+        <div class="panel">
+            <div class="panel-title">🔊 Text-to-Speech (TTS) — Model Voice Output</div>
+            <label style="font-size:0.85rem; color:#94a3b8; margin-bottom:0.5rem; display:block;">Voice</label>
+            <div class="voice-select" id="voice-select">
+                <span class="voice-chip active" data-voice="alloy" onclick="selectVoice('alloy')">Alloy</span>
+                <span class="voice-chip" data-voice="echo" onclick="selectVoice('echo')">Echo</span>
+                <span class="voice-chip" data-voice="fable" onclick="selectVoice('fable')">Fable</span>
+                <span class="voice-chip" data-voice="onyx" onclick="selectVoice('onyx')">Onyx</span>
+                <span class="voice-chip" data-voice="nova" onclick="selectVoice('nova')">Nova</span>
+                <span class="voice-chip" data-voice="shimmer" onclick="selectVoice('shimmer')">Shimmer</span>
+            </div>
+            <label style="font-size:0.85rem; color:#94a3b8; margin-bottom:0.5rem; display:block;">Text to speak</label>
+            <select id="tts-preset" onchange="loadTTSPreset()">
+                <option value="">— Select a preset or type below —</option>
+                <option value="greeting">Interview greeting</option>
+                <option value="question">Sample interview question</option>
+                <option value="followup">Follow-up probe</option>
+                <option value="conclusion">Session conclusion</option>
+            </select>
+            <textarea id="tts-input" placeholder="Type or select text for the model to speak...">Welcome to your mock interview session. I'll be asking you a series of questions based on your resume and target role. Take your time with each answer, and remember to use the STAR method where applicable. Let's begin.</textarea>
+            <button onclick="testTTS()">▶ Speak</button>
+            <button class="btn-secondary" onclick="stopAudio()">⏹ Stop</button>
+            <audio id="tts-audio" class="audio-player" controls style="display:none;"></audio>
+            <div id="tts-status"></div>
+        </div>
+
+        <!-- STT Test Panel -->
+        <div class="panel">
+            <div class="panel-title">🎤 Speech-to-Text (STT) — User Voice Input</div>
+            <p style="font-size:0.85rem; color:#94a3b8; margin-bottom:1rem;">Record your voice and test transcription. Uses your browser's microphone.</p>
+            <div style="display:flex; gap:0.75rem; margin-bottom:0.75rem;">
+                <button id="record-btn" class="btn-green" onclick="toggleRecording()">🎤 Start Recording</button>
+                <button class="btn-secondary" onclick="testSTTWithFile()">📁 Upload Audio File</button>
+                <input type="file" id="audio-file-input" accept="audio/*" style="display:none;" onchange="handleAudioFile(event)">
+            </div>
+            <div id="stt-status"></div>
+            <div class="transcript-box" id="transcript-output">Transcription will appear here...</div>
+            <div class="metrics" id="stt-metrics" style="display:none;">
+                <div class="metric"><div class="value" id="metric-confidence">—</div><div class="label">Confidence</div></div>
+                <div class="metric"><div class="value" id="metric-duration">—</div><div class="label">Duration (s)</div></div>
+                <div class="metric"><div class="value" id="metric-latency">—</div><div class="label">Latency (ms)</div></div>
+            </div>
+        </div>
+
+        <!-- Round-Trip Test -->
+        <div class="panel">
+            <div class="panel-title">🔄 Round-Trip Test — Full Voice Loop</div>
+            <p style="font-size:0.85rem; color:#94a3b8; margin-bottom:1rem;">Simulates a full interview exchange: model asks a question (TTS), you answer (STT), model responds (TTS).</p>
+            <label style="font-size:0.85rem; color:#94a3b8; display:block;">Interview question for the model to ask:</label>
+            <textarea id="roundtrip-question" placeholder="Enter a question...">Tell me about a time you had to solve a complex technical problem under pressure. What was the situation, and what did you do?</textarea>
+            <button onclick="startRoundTrip()">🚀 Start Round-Trip</button>
+            <div id="roundtrip-status"></div>
+            <div id="roundtrip-log" class="log-area" style="display:none;"></div>
+        </div>
+
+        <!-- Voice Config for Live Session -->
+        <div class="panel">
+            <div class="panel-title">⚙️ Configure Live Session Voices</div>
+            <p style="font-size:0.85rem; color:#94a3b8; margin-bottom:1rem;">Select which 3 voices will be available as options in the live interview session.</p>
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:0.5rem; margin-bottom:1rem;">
+                <label style="font-size:0.8rem;"><input type="checkbox" id="cfg-alloy" checked> Alloy</label>
+                <label style="font-size:0.8rem;"><input type="checkbox" id="cfg-echo" checked> Echo</label>
+                <label style="font-size:0.8rem;"><input type="checkbox" id="cfg-fable"> Fable</label>
+                <label style="font-size:0.8rem;"><input type="checkbox" id="cfg-onyx"> Onyx</label>
+                <label style="font-size:0.8rem;"><input type="checkbox" id="cfg-nova" checked> Nova</label>
+                <label style="font-size:0.8rem;"><input type="checkbox" id="cfg-shimmer"> Shimmer</label>
+            </div>
+            <label style="font-size:0.85rem; color:#94a3b8;">Default voice:</label>
+            <select id="cfg-default" style="width:100%; padding:0.5rem; border-radius:6px; border:1px solid #334155; background:#0f172a; color:#e2e8f0; margin-bottom:0.75rem;">
+                <option value="alloy">Alloy</option>
+                <option value="echo">Echo</option>
+                <option value="fable">Fable</option>
+                <option value="onyx">Onyx</option>
+                <option value="nova">Nova</option>
+                <option value="shimmer">Shimmer</option>
+            </select>
+            <button onclick="saveVoiceConfig()" style="background:#22c55e; color:#0f172a;">💾 Save to Live Session</button>
+            <div id="voice-config-status" style="margin-top:0.5rem;"></div>
+        </div>
+
+        <!-- Event Log -->
+        <div class="panel">
+            <div class="panel-title">📋 Event Log</div>
+            <div class="log-area" id="event-log"><div class="log-entry info">Ready. Waiting for test actions...</div></div>
+            <button class="btn-secondary" onclick="clearLog()" style="margin-top:0.5rem;">Clear Log</button>
+        </div>
+    </div>
+
+    <script>
+        const API = 'http://127.0.0.1:8000';
+        let selectedVoice = 'alloy';
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let recordingStartTime = null;
+        let isRecording = false;
+
+        const TTS_PRESETS = {
+            greeting: "Welcome to your mock interview session. I'll be asking you a series of questions based on your resume and target role. Take your time with each answer, and remember to use the STAR method where applicable. Let's begin.",
+            question: "Tell me about your experience with Python. Can you describe a project where you used it to solve a complex problem, and what was the outcome?",
+            followup: "That's interesting. Can you elaborate on the specific technical challenges you faced during that project, and how you overcame them?",
+            conclusion: "Thank you for completing this interview session. I'm now evaluating your responses across four dimensions: clarity of communication, technical accuracy, STAR method adherence, and overall relevancy. Your results will be ready in a moment."
+        };
+
+        // --- Voice Selection ---
+        function selectVoice(voice) {
+            selectedVoice = voice;
+            document.querySelectorAll('.voice-chip').forEach(c => c.classList.remove('active'));
+            document.querySelector(`[data-voice="${voice}"]`).classList.add('active');
+            log('info', `Voice changed to: ${voice}`);
+        }
+
+        // --- TTS ---
+        function loadTTSPreset() {
+            const preset = document.getElementById('tts-preset').value;
+            if (preset && TTS_PRESETS[preset]) {
+                document.getElementById('tts-input').value = TTS_PRESETS[preset];
+            }
+        }
+
+        async function testTTS() {
+            const text = document.getElementById('tts-input').value.trim();
+            if (!text) { setStatus('tts-status', 'Please enter text to speak', 'error'); return; }
+
+            setStatus('tts-status', 'Generating speech...', 'info');
+            log('info', `TTS request: "${text.substring(0, 50)}..." (voice: ${selectedVoice})`);
+
+            const startTime = performance.now();
+
+            try {
+                const res = await fetch(`${API}/test/tts`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text, voice: selectedVoice })
+                });
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    setStatus('tts-status', err.detail || 'TTS failed', 'error');
+                    log('error', `TTS error: ${err.detail}`);
+                    return;
+                }
+
+                const blob = await res.blob();
+                const latency = Math.round(performance.now() - startTime);
+                const audioUrl = URL.createObjectURL(blob);
+                const audio = document.getElementById('tts-audio');
+                audio.src = audioUrl;
+                audio.style.display = 'block';
+                audio.play();
+
+                setStatus('tts-status', `✓ Generated in ${latency}ms (${(blob.size / 1024).toFixed(1)} KB)`, 'success');
+                log('success', `TTS complete: ${latency}ms, ${(blob.size / 1024).toFixed(1)} KB, voice: ${selectedVoice}`);
+            } catch (e) {
+                setStatus('tts-status', `Error: ${e.message}`, 'error');
+                log('error', `TTS exception: ${e.message}`);
+            }
+        }
+
+        function stopAudio() {
+            const audio = document.getElementById('tts-audio');
+            audio.pause();
+            audio.currentTime = 0;
+        }
+
+        // --- STT ---
+        async function toggleRecording() {
+            if (isRecording) {
+                stopRecording();
+            } else {
+                startRecording();
+            }
+        }
+
+        async function startRecording() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+                recordingStartTime = performance.now();
+
+                mediaRecorder.ondataavailable = (e) => { audioChunks.push(e.data); };
+                mediaRecorder.onstop = () => { processRecording(); stream.getTracks().forEach(t => t.stop()); };
+
+                mediaRecorder.start();
+                isRecording = true;
+                document.getElementById('record-btn').textContent = '⏹ Stop Recording';
+                document.getElementById('record-btn').className = 'btn-red';
+                setStatus('stt-status', '● Recording...', 'recording');
+                log('info', 'Recording started');
+            } catch (e) {
+                setStatus('stt-status', `Microphone error: ${e.message}`, 'error');
+                log('error', `Mic access failed: ${e.message}`);
+            }
+        }
+
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
+                isRecording = false;
+                document.getElementById('record-btn').textContent = '🎤 Start Recording';
+                document.getElementById('record-btn').className = 'btn-green';
+            }
+        }
+
+        async function processRecording() {
+            const duration = ((performance.now() - recordingStartTime) / 1000).toFixed(1);
+            setStatus('stt-status', 'Transcribing...', 'info');
+            log('info', `Recording stopped. Duration: ${duration}s. Sending to STT...`);
+
+            const blob = new Blob(audioChunks, { type: 'audio/webm' });
+            await sendToSTT(blob, parseFloat(duration));
+        }
+
+        function testSTTWithFile() {
+            document.getElementById('audio-file-input').click();
+        }
+
+        async function handleAudioFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            setStatus('stt-status', `Transcribing file: ${file.name}...`, 'info');
+            log('info', `Audio file selected: ${file.name} (${(file.size/1024).toFixed(1)} KB)`);
+            await sendToSTT(file, 0); // duration unknown for file uploads
+        }
+
+        async function sendToSTT(audioBlob, duration) {
+            const startTime = performance.now();
+            const formData = new FormData();
+            formData.append('audio', audioBlob, 'recording.webm');
+            formData.append('duration', duration.toString());
+
+            try {
+                const res = await fetch(`${API}/test/stt`, { method: 'POST', body: formData });
+                const latency = Math.round(performance.now() - startTime);
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    setStatus('stt-status', err.detail || 'Transcription failed', 'error');
+                    log('error', `STT error: ${err.detail}`);
+                    return;
+                }
+
+                const data = await res.json();
+                document.getElementById('transcript-output').textContent = data.text || '(empty transcription)';
+                document.getElementById('stt-metrics').style.display = 'grid';
+                document.getElementById('metric-confidence').textContent = data.confidence ? (data.confidence * 100).toFixed(0) + '%' : '—';
+                document.getElementById('metric-duration').textContent = duration || '—';
+                document.getElementById('metric-latency').textContent = latency + 'ms';
+
+                setStatus('stt-status', `✓ Transcribed in ${latency}ms`, 'success');
+                log('success', `STT complete: "${data.text?.substring(0, 60)}..." (${latency}ms, confidence: ${data.confidence})`);
+            } catch (e) {
+                setStatus('stt-status', `Error: ${e.message}`, 'error');
+                log('error', `STT exception: ${e.message}`);
+            }
+        }
+
+        // --- Round-Trip ---
+        async function startRoundTrip() {
+            const question = document.getElementById('roundtrip-question').value.trim();
+            if (!question) { setStatus('roundtrip-status', 'Enter a question', 'error'); return; }
+
+            const logEl = document.getElementById('roundtrip-log');
+            logEl.style.display = 'block';
+            logEl.innerHTML = '';
+
+            rtLog('info', '1. Generating model voice for question (TTS)...');
+            setStatus('roundtrip-status', 'Step 1: Model speaking question...', 'info');
+
+            try {
+                // Step 1: TTS the question
+                const ttsRes = await fetch(`${API}/test/tts`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: question, voice: selectedVoice })
+                });
+
+                if (!ttsRes.ok) { throw new Error('TTS failed'); }
+                const ttsBlob = await ttsRes.blob();
+                const audioUrl = URL.createObjectURL(ttsBlob);
+                rtLog('success', `   ✓ Question audio generated (${(ttsBlob.size/1024).toFixed(1)} KB)`);
+
+                // Play the question
+                const audio = new Audio(audioUrl);
+                rtLog('info', '   Playing question audio...');
+                await new Promise((resolve) => { audio.onended = resolve; audio.play(); });
+                rtLog('success', '   ✓ Question playback complete');
+
+                // Step 2: Record user answer
+                rtLog('info', '2. Your turn — recording your answer...');
+                setStatus('roundtrip-status', 'Step 2: Recording your answer (click Stop when done)...', 'recording');
+
+                const answerBlob = await recordAnswer();
+                const answerDuration = ((performance.now() - recordingStartTime) / 1000).toFixed(1);
+                rtLog('success', `   ✓ Answer recorded (${answerDuration}s)`);
+
+                // Step 3: Transcribe
+                rtLog('info', '3. Transcribing your answer (STT)...');
+                setStatus('roundtrip-status', 'Step 3: Transcribing...', 'info');
+
+                const sttForm = new FormData();
+                sttForm.append('audio', answerBlob, 'answer.webm');
+                sttForm.append('duration', answerDuration);
+                const sttRes = await fetch(`${API}/test/stt`, { method: 'POST', body: sttForm });
+
+                if (!sttRes.ok) { throw new Error('STT failed'); }
+                const sttData = await sttRes.json();
+                rtLog('success', `   ✓ Transcription: "${sttData.text}"`);
+
+                // Step 4: Generate follow-up response
+                rtLog('info', '4. Model generating follow-up response...');
+                setStatus('roundtrip-status', 'Step 4: Model responding...', 'info');
+
+                const followup = `Thank you for that answer. You mentioned some interesting points. Could you elaborate on the specific impact your actions had on the team or project outcomes?`;
+                const followRes = await fetch(`${API}/test/tts`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: followup, voice: selectedVoice })
+                });
+
+                if (!followRes.ok) { throw new Error('Follow-up TTS failed'); }
+                const followBlob = await followRes.blob();
+                const followAudio = new Audio(URL.createObjectURL(followBlob));
+                rtLog('success', `   ✓ Follow-up audio generated`);
+                rtLog('info', '   Playing model response...');
+                await new Promise((resolve) => { followAudio.onended = resolve; followAudio.play(); });
+
+                rtLog('success', '✓ Round-trip complete!');
+                setStatus('roundtrip-status', '✓ Round-trip test complete!', 'success');
+                log('success', 'Round-trip voice test completed successfully');
+
+            } catch (e) {
+                rtLog('error', `✗ Error: ${e.message}`);
+                setStatus('roundtrip-status', `Error: ${e.message}`, 'error');
+                log('error', `Round-trip failed: ${e.message}`);
+            }
+        }
+
+        function recordAnswer() {
+            return new Promise(async (resolve) => {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const recorder = new MediaRecorder(stream);
+                const chunks = [];
+                recordingStartTime = performance.now();
+
+                recorder.ondataavailable = (e) => chunks.push(e.data);
+                recorder.onstop = () => {
+                    stream.getTracks().forEach(t => t.stop());
+                    resolve(new Blob(chunks, { type: 'audio/webm' }));
+                };
+
+                recorder.start();
+
+                // Auto-stop after 30 seconds or user clicks stop
+                const stopBtn = document.createElement('button');
+                stopBtn.textContent = '⏹ Stop Answer';
+                stopBtn.className = 'btn-red';
+                stopBtn.style.marginTop = '0.5rem';
+                stopBtn.onclick = () => { recorder.stop(); stopBtn.remove(); };
+                document.getElementById('roundtrip-log').appendChild(stopBtn);
+
+                setTimeout(() => { if (recorder.state === 'recording') { recorder.stop(); stopBtn.remove(); } }, 30000);
+            });
+        }
+
+        function rtLog(type, msg) {
+            const el = document.getElementById('roundtrip-log');
+            el.innerHTML += `<div class="log-entry ${type}">[${new Date().toLocaleTimeString()}] ${msg}</div>`;
+            el.scrollTop = el.scrollHeight;
+        }
+
+        // --- Utilities ---
+        function setStatus(id, msg, type) {
+            document.getElementById(id).innerHTML = `<div class="status status-${type}">${msg}</div>`;
+        }
+
+        function log(type, msg) {
+            const el = document.getElementById('event-log');
+            el.innerHTML += `<div class="log-entry ${type}">[${new Date().toLocaleTimeString()}] ${msg}</div>`;
+            el.scrollTop = el.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('event-log').innerHTML = '<div class="log-entry info">Log cleared.</div>';
+        }
+
+        // --- Voice Config ---
+        async function saveVoiceConfig() {
+            const voices = ['alloy','echo','fable','onyx','nova','shimmer'];
+            const selected = voices.filter(v => document.getElementById(`cfg-${v}`).checked);
+
+            if (selected.length !== 3) {
+                document.getElementById('voice-config-status').innerHTML = '<div style="color:#fca5a5; font-size:0.8rem;">Please select exactly 3 voices.</div>';
+                return;
+            }
+
+            const defaultVoice = document.getElementById('cfg-default').value;
+
+            // Load current theme, update voice section, save back
+            try {
+                const res = await fetch(`${API}/theme`);
+                const theme = res.ok ? await res.json() : {};
+                theme.voice = { availableVoices: selected, defaultVoice, primaryMode: 'voice' };
+                await fetch(`${API}/theme`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(theme) });
+                document.getElementById('voice-config-status').innerHTML = '<div style="color:#4ade80; font-size:0.8rem;">✓ Saved! Live session will offer: ' + selected.join(', ') + '</div>';
+                log('success', `Voice config saved: [${selected.join(', ')}], default: ${defaultVoice}`);
+            } catch (e) {
+                document.getElementById('voice-config-status').innerHTML = '<div style="color:#fca5a5; font-size:0.8rem;">Save failed</div>';
+            }
+        }
+
+        // Load existing voice config on page load
+        async function loadVoiceConfig() {
+            try {
+                const res = await fetch(`${API}/theme`);
+                if (res.ok) {
+                    const theme = await res.json();
+                    if (theme.voice) {
+                        const voices = theme.voice.availableVoices || [];
+                        ['alloy','echo','fable','onyx','nova','shimmer'].forEach(v => {
+                            document.getElementById(`cfg-${v}`).checked = voices.includes(v);
+                        });
+                        if (theme.voice.defaultVoice) {
+                            document.getElementById('cfg-default').value = theme.voice.defaultVoice;
+                        }
+                    }
+                }
+            } catch (e) {}
+        }
+        loadVoiceConfig();
+    </script>
+</body>
+</html>

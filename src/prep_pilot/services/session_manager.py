@@ -46,6 +46,7 @@ class NextAction:
 
     action: NextActionType
     question: Optional[InterviewQuestion] = None
+    closing_message: Optional[str] = None
 
 
 class QuestionGeneratorProtocol(Protocol):
@@ -198,7 +199,8 @@ class SessionManager:
                 )
             session.selected_role = role
 
-            # Generate questions if question generator is available
+            # Generate initial questions (reduced count for faster startup)
+            # The conversational follow-up system will handle the rest dynamically
             if self._question_generator:
                 questions = await self._question_generator.generate_open_practice(
                     role=role, resume=session.resume, count=10
@@ -338,10 +340,36 @@ class SessionManager:
             logger.info(
                 "Session %s: all questions answered, now CONCLUDED", session_id
             )
-            return NextAction(action=NextActionType.CONCLUDE)
 
-        # Return the next question
-        next_question = session.questions[session.current_question_index]
+            # Generate a natural conversational close
+            closing_message = await self._generate_closing(session)
+            return NextAction(
+                action=NextActionType.CONCLUDE,
+                closing_message=closing_message,
+            )
+
+        # Generate a conversational follow-up question based on the dialogue so far
+        if self._question_generator and len(session.responses) > 0:
+            try:
+                remaining = session.questions[session.current_question_index:]
+                followup = await self._question_generator.generate_followup(
+                    resume=session.resume,
+                    conversation_history=session.responses,
+                    remaining_topics=remaining,
+                    role=session.selected_role,
+                    job_description=session.job_description,
+                )
+                # Replace the next pre-generated question with the conversational one
+                session.questions[session.current_question_index] = followup
+                next_question = followup
+            except Exception as exc:
+                logger.warning(
+                    "Conversational follow-up failed, using pre-generated: %s", exc
+                )
+                next_question = session.questions[session.current_question_index]
+        else:
+            next_question = session.questions[session.current_question_index]
+
         return NextAction(
             action=NextActionType.NEXT_QUESTION, question=next_question
         )
@@ -429,6 +457,69 @@ class SessionManager:
             resume_relevancy=resume_relevancy,
             feedback_report=feedback_report,
             insufficient_responses=False,
+        )
+
+    async def _generate_closing(self, session: InterviewSession) -> str:
+        """Generate a natural conversational closing for the interview.
+
+        References the candidate's responses to create a warm, personalized
+        sign-off that feels like a real interviewer wrapping up.
+
+        Args:
+            session: The concluded interview session.
+
+        Returns:
+            A natural closing message string.
+        """
+        if not self._question_generator:
+            return (
+                "Thank you so much for your time today. You gave some really "
+                "thoughtful answers, and I enjoyed our conversation. I'm going "
+                "to review everything and put together your evaluation now. "
+                "You'll have your results in just a moment."
+            )
+
+        # Build a brief summary of what was discussed
+        topics_discussed = []
+        for qr in session.responses[-3:]:  # Reference last few answers
+            snippet = qr.response_text[:80]
+            topics_discussed.append(snippet)
+
+        context = "; ".join(topics_discussed) if topics_discussed else "various topics"
+
+        system_prompt = (
+            "You are an expert interviewer wrapping up a mock interview session. "
+            "Generate a brief, warm, natural closing statement (2-3 sentences). "
+            "Reference something specific from the conversation to make it personal. "
+            "Let them know their evaluation is coming. Keep it professional but friendly. "
+            "Do NOT use bullet points or formatting — just natural speech."
+        )
+
+        user_prompt = (
+            f"The candidate just finished answering {len(session.responses)} questions "
+            f"for a {session.selected_role or 'general'} role interview. "
+            f"Recent topics they discussed: {context}. "
+            f"Generate a natural closing statement."
+        )
+
+        try:
+            closing = await self._question_generator._llm_client.generate(
+                prompt=user_prompt,
+                system_prompt=system_prompt,
+            )
+            return closing.strip() if closing.strip() else self._default_closing()
+        except Exception as exc:
+            logger.warning("Failed to generate closing: %s", exc)
+            return self._default_closing()
+
+    @staticmethod
+    def _default_closing() -> str:
+        """Return a default closing message when LLM generation fails."""
+        return (
+            "Thank you so much for your time today. You gave some really "
+            "thoughtful answers, and I enjoyed our conversation. I'm going "
+            "to review everything and put together your evaluation now. "
+            "You'll have your results in just a moment."
         )
 
     def get_session(self, session_id: str) -> InterviewSession:

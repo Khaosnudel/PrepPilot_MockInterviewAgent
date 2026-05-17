@@ -5,7 +5,7 @@ import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, Request, status
+from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -128,6 +128,107 @@ async def save_theme(request: Request):
 async def health_check() -> dict:
     """Health check endpoint."""
     return {"status": "healthy"}
+
+
+# ---------------------------------------------------------------------------
+# Voice Test Endpoints (dev only)
+# ---------------------------------------------------------------------------
+
+
+@app.get("/test-voice", status_code=status.HTTP_200_OK)
+async def serve_test_voice():
+    """Serve the voice interaction test page (dev only)."""
+    return FileResponse(_static_dir / "test-voice.html")
+
+
+@app.post("/test/tts")
+async def test_tts(request: Request):
+    """Test TTS endpoint — converts text to speech audio."""
+    from openai import AsyncOpenAI
+    from fastapi.responses import StreamingResponse
+    import io
+
+    data = await request.json()
+    text = data.get("text", "")
+    voice = data.get("voice", "alloy")
+
+    if not text:
+        raise HTTPException(status_code=400, detail="Text is required")
+
+    api_key = os.environ.get("OPENAI_API_KEY", "")
+    if not api_key or api_key == "sk-placeholder-not-set":
+        raise HTTPException(status_code=400, detail="OpenAI API key not configured. Set OPENAI_API_KEY in your .env file.")
+
+    try:
+        client = AsyncOpenAI(api_key=api_key)
+        response = await client.audio.speech.create(
+            model="tts-1",
+            voice=voice,
+            input=text,
+        )
+        # Read the audio bytes
+        audio_bytes = b""
+        async for chunk in response.iter_bytes():
+            audio_bytes += chunk
+
+        return StreamingResponse(
+            io.BytesIO(audio_bytes),
+            media_type="audio/mpeg",
+            headers={"Content-Length": str(len(audio_bytes))}
+        )
+    except Exception as exc:
+        logger.error("TTS test failed: %s", exc)
+        raise HTTPException(status_code=500, detail=f"TTS failed: {str(exc)}")
+
+
+@app.post("/test/stt")
+async def test_stt(request: Request):
+    """Test STT endpoint — transcribes audio to text."""
+    from openai import AsyncOpenAI
+    from fastapi import UploadFile, File, Form
+    import io
+
+    api_key = os.environ.get("OPENAI_API_KEY", "")
+    if not api_key or api_key == "sk-placeholder-not-set":
+        raise HTTPException(status_code=400, detail="OpenAI API key not configured. Set OPENAI_API_KEY in your .env file.")
+
+    form = await request.form()
+    audio_file = form.get("audio")
+    duration = float(form.get("duration", "0"))
+
+    if not audio_file:
+        raise HTTPException(status_code=400, detail="Audio file is required")
+
+    try:
+        audio_bytes = await audio_file.read()
+        client = AsyncOpenAI(api_key=api_key)
+
+        # Create a file-like object
+        audio_io = io.BytesIO(audio_bytes)
+        audio_io.name = "recording.webm"
+
+        transcription = await client.audio.transcriptions.create(
+            model="whisper-1",
+            file=audio_io,
+        )
+
+        text = transcription.text.strip() if transcription.text else ""
+        has_words = any(c.isalpha() for c in text)
+
+        # Estimate confidence heuristic
+        word_count = len(text.split()) if text else 0
+        confidence = min(0.95, 0.5 + (word_count * 0.05)) if word_count > 0 else 0.0
+
+        return {
+            "text": text,
+            "confidence": round(confidence, 2),
+            "has_recognizable_words": has_words,
+            "duration": duration,
+            "word_count": word_count,
+        }
+    except Exception as exc:
+        logger.error("STT test failed: %s", exc)
+        raise HTTPException(status_code=500, detail=f"STT failed: {str(exc)}")
 
 
 # ---------------------------------------------------------------------------

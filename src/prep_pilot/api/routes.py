@@ -17,6 +17,7 @@ from prep_pilot.models.api import (
 )
 from prep_pilot.models.domain import InterviewMode, SessionStatus
 from prep_pilot.services.evaluation_engine import EvaluationEngine
+from prep_pilot.services.feedback_generator import FeedbackGenerator
 from prep_pilot.services.file_validator import FileValidator
 from prep_pilot.services.jd_parser import (
     JobDescriptionParser,
@@ -62,10 +63,14 @@ class ServiceContainer:
             llm_client=self.llm_client,
             prompt_manager=self.prompt_manager,
         )
+        self.feedback_generator = FeedbackGenerator(
+            llm_client=self.llm_client,
+            prompt_manager=self.prompt_manager,
+        )
         self.session_manager = SessionManager(
             question_generator=self.question_generator,
             evaluation_engine=self.evaluation_engine,
-            feedback_generator=None,  # Not yet implemented (task 9.1)
+            feedback_generator=self.feedback_generator,
         )
 
 
@@ -311,6 +316,104 @@ async def upload_job_description(
     }
 
 
+@router.post(
+    "/sessions/{session_id}/job-description-url",
+    status_code=status.HTTP_200_OK,
+)
+async def upload_job_description_url(
+    session_id: str,
+    request_body: dict,
+    container: ServiceContainer = Depends(get_container),
+) -> dict:
+    """Fetch a job posting from a URL and parse it for job-specific mode.
+
+    Scrapes the page content, extracts text, and parses it as a job description.
+    """
+    import httpx
+
+    url = request_body.get("url", "").strip()
+    if not url:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A URL is required.",
+        )
+
+    if not url.startswith("http"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Please provide a valid URL starting with http:// or https://",
+        )
+
+    # Fetch the page content
+    try:
+        async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
+            response = await client.get(url, headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+            })
+            response.raise_for_status()
+            page_content = response.text
+    except httpx.HTTPStatusError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Could not fetch the URL (HTTP {exc.response.status_code}). Please check the link.",
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Could not fetch the URL: {str(exc)}. Please try uploading a file instead.",
+        )
+
+    # Strip HTML tags to get plain text
+    import re
+    text_content = re.sub(r'<script[^>]*>.*?</script>', '', page_content, flags=re.DOTALL)
+    text_content = re.sub(r'<style[^>]*>.*?</style>', '', text_content, flags=re.DOTALL)
+    text_content = re.sub(r'<[^>]+>', ' ', text_content)
+    text_content = re.sub(r'\s+', ' ', text_content).strip()
+
+    if len(text_content) < 50:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Could not extract meaningful content from the URL. The page may require login or JavaScript. Try uploading the job description as a file instead.",
+        )
+
+    # Parse the extracted text as a job description
+    try:
+        parsed_jd = await container.jd_parser.parse(
+            file_content=text_content.encode("utf-8"), file_type="text/plain"
+        )
+    except JDParserError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Could not parse job description from the page: {str(exc)}",
+        )
+
+    # Upload to session manager
+    try:
+        session = await container.session_manager.upload_job_description(
+            session_id, parsed_jd
+        )
+    except SessionNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Session not found.",
+        )
+    except InvalidStateError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(exc),
+        )
+
+    return {
+        "session_id": session.id,
+        "status": session.status.value,
+        "requirements": parsed_jd.requirements,
+        "responsibilities": parsed_jd.responsibilities,
+        "qualifications": parsed_jd.qualifications,
+        "summary": parsed_jd.summary,
+        "source": "url",
+    }
+
+
 @router.get(
     "/sessions/{session_id}/questions",
     response_model=QuestionResponse,
@@ -388,6 +491,8 @@ async def submit_answer(
             "question_text": next_action.question.text,
             "category": next_action.question.category,
         }
+    if next_action.closing_message:
+        response["closing_message"] = next_action.closing_message
 
     return response
 

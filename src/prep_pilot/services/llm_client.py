@@ -56,8 +56,11 @@ class LLMClient:
         self._timeout = timeout
         self._max_retries = max_retries
 
-        # Create async httpx client for the openai library
-        http_client = httpx.AsyncClient(timeout=httpx.Timeout(timeout))
+        # Create async httpx client with connection pooling for faster subsequent calls
+        http_client = httpx.AsyncClient(
+            timeout=httpx.Timeout(timeout),
+            limits=httpx.Limits(max_connections=10, max_keepalive_connections=5),
+        )
 
         # Use a placeholder key if none provided so the client can initialize
         # without crashing. Actual API calls will fail with a clear auth error.

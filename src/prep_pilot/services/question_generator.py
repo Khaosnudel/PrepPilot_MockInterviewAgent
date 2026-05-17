@@ -10,6 +10,7 @@ from prep_pilot.models.domain import (
     InterviewQuestion,
     ParsedJobDescription,
     ParsedResume,
+    QuestionResponse,
 )
 from prep_pilot.services.llm_client import LLMClient, LLMClientError
 from prep_pilot.services.prompt_manager import PromptManager
@@ -17,9 +18,9 @@ from prep_pilot.services.prompt_manager import PromptManager
 logger = logging.getLogger(__name__)
 
 # Bounds for question generation
-MIN_OPEN_PRACTICE_QUESTIONS = 5
-MAX_OPEN_PRACTICE_QUESTIONS = 15
-MIN_JOB_SPECIFIC_QUESTIONS = 5
+MIN_OPEN_PRACTICE_QUESTIONS = 10
+MAX_OPEN_PRACTICE_QUESTIONS = 10
+MIN_JOB_SPECIFIC_QUESTIONS = 10
 
 
 class QuestionGenerationError(Exception):
@@ -258,3 +259,104 @@ class QuestionGenerator:
                     "All questions must reference at least one resume skill, "
                     "experience, or qualification."
                 )
+
+    async def generate_followup(
+        self,
+        resume: ParsedResume,
+        conversation_history: list[QuestionResponse],
+        remaining_topics: list[InterviewQuestion],
+        role: Optional[str] = None,
+        job_description: Optional[ParsedJobDescription] = None,
+    ) -> InterviewQuestion:
+        """Generate the next conversational question based on the interview so far.
+
+        Creates a natural follow-up that acknowledges the candidate's previous
+        answer and transitions smoothly to the next topic. Uses the conversation
+        history to create a flowing dialogue rather than a rigid Q&A.
+
+        Args:
+            resume: Parsed resume for context.
+            conversation_history: All Q&A pairs so far in the session.
+            remaining_topics: Pre-generated questions that haven't been asked yet
+                (used as topic guidance, not asked verbatim).
+            role: Target role (for open practice mode).
+            job_description: Parsed JD (for job-specific mode).
+
+        Returns:
+            A single InterviewQuestion that flows naturally from the conversation.
+
+        Raises:
+            QuestionGenerationError: If generation fails.
+        """
+        # Build conversation context
+        convo_text = ""
+        for i, qr in enumerate(conversation_history, 1):
+            convo_text += f"Q{i}: {qr.question.text}\nA{i}: {qr.response_text}\n\n"
+
+        # Build upcoming topics hint
+        topics_hint = ""
+        if remaining_topics:
+            topics_hint = "Upcoming topics to weave in naturally:\n"
+            for t in remaining_topics[:3]:  # Only hint at next few
+                topics_hint += f"- {t.text} (references: {t.references_resume_item or t.references_jd_item})\n"
+
+        # Build role/JD context
+        context = f"Target role: {role}" if role else ""
+        if job_description:
+            context = f"Job: {job_description.summary}"
+
+        system_prompt = (
+            "You are an expert interviewer conducting a natural, conversational "
+            "mock interview. Your task is to generate the NEXT question in the "
+            "conversation.\n\n"
+            "Rules:\n"
+            "- Acknowledge or briefly reference something from the candidate's "
+            "last answer to create a natural transition (e.g., 'That's interesting "
+            "that you mentioned X. Building on that...' or 'I appreciate that detail. "
+            "Shifting gears slightly...').\n"
+            "- The question should feel like a natural follow-up in a real interview, "
+            "not a disconnected jump to a new topic.\n"
+            "- If the candidate's answer was vague, probe deeper on the same topic.\n"
+            "- If the candidate gave a thorough answer, transition to the next topic.\n"
+            "- Reference the candidate's resume where relevant.\n"
+            "- Keep the conversational tone professional but warm.\n"
+            "- The question should be a single, clear question (not multiple questions).\n\n"
+            "Output format: Return a JSON object with fields:\n"
+            '- "id": unique identifier (e.g., "q3")\n'
+            '- "text": the full conversational question including any transition/acknowledgment\n'
+            '- "category": one of "behavioral", "technical", "situational"\n'
+            '- "references_resume_item": which resume item this relates to (or null)\n'
+        )
+
+        resume_summary = self._prompt_manager._format_resume_context(resume)
+
+        user_prompt = (
+            f"Interview context: {context}\n\n"
+            f"Candidate's resume:\n{resume_summary}\n\n"
+            f"Conversation so far:\n{convo_text}\n"
+            f"{topics_hint}\n"
+            f"Generate the next natural conversational question (question #{len(conversation_history) + 1})."
+        )
+
+        try:
+            result = await self._llm_client.generate_structured(
+                prompt=user_prompt,
+                system_prompt=system_prompt,
+                schema=GeneratedQuestion,
+            )
+        except LLMClientError as exc:
+            logger.error("Conversational follow-up generation failed: %s", exc)
+            # Fallback: use the next pre-generated question if available
+            if remaining_topics:
+                return remaining_topics[0]
+            raise QuestionGenerationError(
+                "Failed to generate follow-up question."
+            ) from exc
+
+        return InterviewQuestion(
+            id=result.id,
+            text=result.text,
+            category=result.category,
+            references_resume_item=result.references_resume_item,
+            references_jd_item=result.references_jd_item,
+        )

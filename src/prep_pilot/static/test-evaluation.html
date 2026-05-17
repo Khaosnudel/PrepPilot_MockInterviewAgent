@@ -89,7 +89,8 @@
             </div>
 
             <div class="tab-content active" id="tab-scores">
-                <h3 style="margin-bottom:1rem;">Interview Readiness Score</h3>
+                <h3 style="margin-bottom:0.25rem;">Interview Readiness Score <span id="readiness-total" style="font-size:0.95rem; color:#94a3b8; font-weight:400;"></span></h3>
+                <div style="color:#94a3b8; margin-bottom:1rem; font-size:0.95rem;">Each category contributes to the cumulative 100-point readiness score.</div>
                 <div class="score-grid" id="readiness-scores"></div>
                 <div id="relevancy-score"></div>
                 <div id="score-reasoning"></div>
@@ -97,6 +98,7 @@
 
             <div class="tab-content" id="tab-feedback">
                 <h3 style="margin-bottom:1rem;">Improvement Suggestions</h3>
+                <div id="resume-alignment-feedback" style="margin-bottom:0.75rem;"></div>
                 <div id="improvement-suggestions"></div>
             </div>
 
@@ -231,58 +233,198 @@
 
             if (!currentScores) currentScores = generateMockScores();
 
-            // Readiness scores
+            const weightedScores = {
+                clarity: currentScores.clarity * 2.5,
+                technical: currentScores.technical * 2.5,
+                star: currentScores.star * 2.5,
+                relevancy: currentScores.relevancy * 2.5,
+            };
+
+            const formatScore = (value) => Number(value.toFixed(1));
+            const roundedScores = {
+                clarity: formatScore(weightedScores.clarity),
+                technical: formatScore(weightedScores.technical),
+                star: formatScore(weightedScores.star),
+                relevancy: formatScore(weightedScores.relevancy),
+            };
+
+            const totalReadinessScore = formatScore(
+                Object.values(weightedScores).reduce((sum, value) => sum + value, 0)
+            );
+            document.getElementById('readiness-total').textContent = `(${totalReadinessScore}/100)`;
+
+            // Readiness scores (4 categories cumulatively add to the 100-point readiness score)
             document.getElementById('readiness-scores').innerHTML = `
-                <div class="score-card"><div class="score">${currentScores.clarity}</div><div class="label">Clarity of Communication</div></div>
-                <div class="score-card"><div class="score">${currentScores.technical}</div><div class="label">Technical Accuracy</div></div>
-                <div class="score-card"><div class="score">${currentScores.star}</div><div class="label">STAR Method</div></div>
-                <div class="score-card"><div class="score">${currentScores.relevancy}</div><div class="label">Overall Relevancy</div></div>
+                <div class="score-card"><div class="score">${roundedScores.clarity}</div><div class="label">Clarity of Communication<br/><span style="color:#94a3b8; font-size:0.75rem;">/ 25</span></div></div>
+                <div class="score-card"><div class="score">${roundedScores.technical}</div><div class="label">Technical Accuracy<br/><span style="color:#94a3b8; font-size:0.75rem;">/ 25</span></div></div>
+                <div class="score-card"><div class="score">${roundedScores.star}</div><div class="label">STAR Method<br/><span style="color:#94a3b8; font-size:0.75rem;">/ 25</span></div></div>
+                <div class="score-card"><div class="score">${roundedScores.relevancy}</div><div class="label">Overall Relevancy<br/><span style="color:#94a3b8; font-size:0.75rem;">/ 25</span></div></div>
             `;
 
             // Resume relevancy
             document.getElementById('relevancy-score').innerHTML = `
                 <div class="score-card relevancy" style="max-width:200px; margin-bottom:1.5rem;">
                     <div class="score">${currentScores.resumeRelevancy}</div>
-                    <div class="label">Resume Relevancy</div>
+                    <div class="label">Resume Relevancy (out of 10)</div>
                 </div>
             `;
 
-            // Score reasoning
-            const dimensions = ['Clarity of Communication', 'Technical Accuracy', 'STAR Method', 'Overall Relevancy'];
-            const scores = [currentScores.clarity, currentScores.technical, currentScores.star, currentScores.relevancy];
-            let reasoningHtml = '<h3 style="margin-top:1.5rem; margin-bottom:0.75rem;">Score Reasoning</h3>';
-            dimensions.forEach((dim, i) => {
-                reasoningHtml += `<div class="feedback-item"><strong>${dim} (${scores[i]}/10):</strong> The candidate demonstrated ${scores[i] >= 7 ? 'strong' : 'moderate'} ${dim.toLowerCase()} in their responses. ${scores[i] >= 8 ? 'Responses were well-structured and specific.' : 'Some areas could benefit from more specificity and structure.'}</div>`;
-            });
-            document.getElementById('score-reasoning').innerHTML = reasoningHtml;
+            // Resume alignment feedback (based on resume relevancy and detected skills)
+            (function renderResumeAlignment() {
+                const rr = currentScores.resumeRelevancy; // 1-10 scale
+                let msg = '';
+                if (rr >= 8) {
+                    msg = 'Your resume appears well-aligned with the role. It highlights relevant skills and experience that match typical responsibilities.';
+                } else if (rr >= 5) {
+                    msg = 'Your resume shows some relevant strengths, but could be tailored more closely to the role. Consider emphasizing role-specific achievements and keywords.';
+                } else {
+                    msg = 'Your resume may not be closely aligned with this role. Consider adding or emphasizing relevant projects, responsibilities, and measurable outcomes.';
+                }
 
-            // Improvement suggestions
+                const skillsList = p.skills && p.skills.length ? `<div style="margin-top:0.5rem;"><strong>Detected skills:</strong> ${p.skills.join(', ')}</div>` : '';
+                const suggestions = `<div style="margin-top:0.5rem;">Suggestions: Add measurable outcomes, align bullet points with job duties, and surface tools/technologies mentioned in the job description.</div>`;
+
+                document.getElementById('resume-alignment-feedback').innerHTML = `
+                    <div class="feedback-item"><strong>Resume alignment (${rr}/10):</strong> ${msg}${skillsList}${suggestions}</div>
+                `;
+            })();
+
+            // Score reasoning and answer-specific feedback per category
+            const categoryDetails = [
+                {
+                    name: 'Clarity of Communication',
+                    score: roundedScores.clarity,
+                    answer: p.answers[0],
+                    strong: 'Your first answer is easy to follow and communicates the main point clearly.',
+                    weak: 'Open with a tighter summary sentence, remove filler phrases, and use shorter, more precise language so the listener can grasp your point immediately.',
+                    suggestion: 'State the key outcome in the first sentence, avoid filler words like "basically" or "kind of," and keep each sentence focused on one idea.',
+                },
+                {
+                    name: 'Technical Accuracy',
+                    score: roundedScores.technical,
+                    answer: p.answers[0],
+                    strong: 'The technical content is relevant and grounded in real tools and architecture.',
+                    weak: 'Add exact implementation details, name the technologies you used, and clarify assumptions so the technical story is concrete rather than generic.',
+                    suggestion: 'Mention specific tools, frameworks, or system components, and explain how your decisions were validated or tested.',
+                },
+                {
+                    name: 'STAR Method',
+                    score: roundedScores.star,
+                    answer: p.answers[1],
+                    strong: 'This answer follows a good narrative flow with a clear situation and action.',
+                    weak: 'Make the Task and Result explicit. Spell out what your responsibility was and what outcome your action delivered.',
+                    suggestion: 'Label the Situation, Task, Action, and Result clearly in the story, and include measurable impact such as time saved or error reduction.',
+                },
+                {
+                    name: 'Overall Relevancy',
+                    score: roundedScores.relevancy,
+                    answer: p.answers[2],
+                    strong: 'The answer stays on topic and directly addresses the question asked.',
+                    weak: 'Tie the response more directly to the role or question prompt, and remove any side details that do not support your main point.',
+                    suggestion: 'Connect the example to the specific job requirement, and ensure every sentence adds relevant evidence to your answer.',
+                },
+            ];
+
+            let reasoningHtml = '<h3 style="margin-top:1.5rem; margin-bottom:0.75rem;">Score Reasoning</h3>';
             let suggestionsHtml = '';
-            dimensions.forEach((dim, i) => {
-                suggestionsHtml += `<div class="feedback-item"><strong>${dim}:</strong> ${scores[i] >= 7 ? 'Continue providing specific examples. Consider adding quantifiable metrics to strengthen your responses further.' : 'Try to structure responses more clearly. Use the STAR method and include specific metrics or outcomes.'}</div>`;
+
+            categoryDetails.forEach((category) => {
+                reasoningHtml += `
+                    <div class="feedback-item">
+                        <strong>${category.name} (${category.score}/25):</strong>
+                        ${category.score >= 18 ? category.strong : category.weak}
+                        <div style="margin-top:0.5rem; color:#cbd5e1; font-size:0.95rem;">Related answer: "${category.answer.slice(0, 120).replace(/\n/g, ' ')}${category.answer.length > 120 ? '...' : ''}"</div>
+                    </div>
+                `;
+
+                suggestionsHtml += `
+                    <div class="feedback-item">
+                        <strong>${category.name}:</strong>
+                        ${category.suggestion}
+                    </div>
+                `;
             });
+
+            document.getElementById('score-reasoning').innerHTML = reasoningHtml;
             document.getElementById('improvement-suggestions').innerHTML = suggestionsHtml;
 
             // Improved answers
+            const improvedSuggestions = p.questions.map((question, idx) => {
+                const response = p.answers[idx];
+                let improvement = '';
+
+                if (question.category === 'technical') {
+                    improvement = `Focus this answer on the technical design and implementation details requested by the question. Mention the exact technologies you used, the architectural choice you made, and the concrete result that followed.`;
+                } else if (question.category === 'behavioral') {
+                    improvement = `Use the STAR framework clearly for this story: spell out your specific task, the action you took, and the measurable result. Tie the example back to how you handled the situation asked in the question.`;
+                } else if (question.category === 'situational') {
+                    improvement = `Keep the response tightly aligned with the scenario in the question. Explain your decision-making process for this situation, what you would do step by step, and the business or user impact of that approach.`;
+                } else {
+                    improvement = `Make this answer more specific to the question by linking your example directly to the role or scenario, and by naming the outcome you intended to achieve.`;
+                }
+
+                return {
+                    text: question.text,
+                    original: response,
+                    improved: improvement,
+                };
+            });
+
             let improvedHtml = '';
-            for (let i = 0; i < p.questions.length; i++) {
+            improvedSuggestions.forEach((item, idx) => {
                 improvedHtml += `
                     <div style="margin-bottom:1.5rem;">
-                        <div style="color:#94a3b8; font-size:0.85rem; margin-bottom:0.5rem;">Q${i+1}: ${p.questions[i].text}</div>
-                        <div class="original-answer"><strong>Your answer:</strong> ${p.answers[i]}</div>
-                        <div class="improved-answer"><strong>Improved version:</strong> A stronger response would include specific metrics (e.g., "reduced latency by 40%"), name the technologies used, and clearly state the outcome and business impact of your actions.</div>
+                        <div style="color:#94a3b8; font-size:0.85rem; margin-bottom:0.5rem;">Q${idx+1}: ${item.text}</div>
+                        <div class="original-answer"><strong>Your answer:</strong> ${item.original}</div>
+                        <div class="improved-answer"><strong>Improved version:</strong> ${item.improved}</div>
                     </div>
                 `;
-            }
+            });
             document.getElementById('improved-answers').innerHTML = improvedHtml;
 
             // Follow-up questions
-            const followups = [
-                "Can you walk me through a specific technical decision you made and the tradeoffs involved?",
-                "How do you prioritize tasks when multiple deadlines are competing?",
-                "Tell me about a time you disagreed with a teammate's approach. How did you resolve it?",
-                "What's a recent technology you learned and how did you apply it?"
-            ];
+            const shuffle = (items) => items.slice().sort(() => Math.random() - 0.5);
+
+            const followupPools = {
+                'software engineer': [
+                    'How would you design a microservice to handle sudden traffic spikes while maintaining availability?',
+                    'Describe how you would debug a production API issue when logs are limited.',
+                    'What testing strategy would you use to validate a new FastAPI endpoint before deployment?',
+                    'How do you choose between synchronous and asynchronous processing for a backend service?'
+                ],
+                'data scientist': [
+                    'How would you validate a recommendation model before releasing it to production?',
+                    'Describe your approach to diagnosing a sudden drop in model performance.',
+                    'What metrics would you track for an NLP model deployed in a customer-facing product?',
+                    'How do you ensure your training data represents actual user behavior?'
+                ],
+                'devops engineer': [
+                    'Explain how you would stabilize a Kubernetes deployment after a failed rollout.',
+                    'What steps would you take to reduce deployment time while keeping rollback safety?',
+                    'How do you ensure infrastructure changes are reviewed and tested before production?',
+                    'Describe how you would respond to a security incident in a cloud environment.'
+                ],
+                'frontend developer': [
+                    'How do you make a React app more accessible for keyboard and screen reader users?',
+                    'What approach would you take to improve page performance for a complex dashboard?',
+                    'How do you migrate a large JavaScript codebase to TypeScript without breaking the UI?',
+                    'Describe the workflow you use to keep component styling maintainable across a large app.'
+                ],
+            };
+
+            const roleKey = p.role.toLowerCase();
+            let roleFollowups = followupPools['software engineer'];
+
+            if (roleKey.includes('data scientist')) {
+                roleFollowups = followupPools['data scientist'];
+            } else if (roleKey.includes('devops')) {
+                roleFollowups = followupPools['devops engineer'];
+            } else if (roleKey.includes('frontend')) {
+                roleFollowups = followupPools['frontend developer'];
+            }
+
+            const deckFollowups = shuffle(p.questions.map((question) => question.text)).slice(0, 2);
+            const followups = shuffle(roleFollowups).slice(0, 2).concat(deckFollowups);
             document.getElementById('followup-questions').innerHTML = followups.map(q => `<div class="feedback-item">${q}</div>`).join('');
 
             document.getElementById('eval-panel').style.display = 'block';
