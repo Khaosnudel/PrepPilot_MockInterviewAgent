@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prep Pilot - Mock Interview Agent</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; padding: 2rem; }
+        .container { max-width: 800px; margin: 0 auto; }
+        h1 { font-size: 2rem; margin-bottom: 0.5rem; color: #38bdf8; }
+        h2 { font-size: 1.3rem; margin-bottom: 1rem; color: #94a3b8; }
+        .step { background: #1e293b; border-radius: 12px; padding: 2rem; margin-bottom: 1.5rem; display: none; }
+        .step.active { display: block; }
+        label { display: block; font-weight: 600; margin-bottom: 0.5rem; color: #cbd5e1; }
+        input[type="file"], select, textarea { width: 100%; padding: 0.75rem; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: #e2e8f0; font-size: 1rem; margin-bottom: 1rem; }
+        textarea { min-height: 120px; resize: vertical; }
+        button { background: #2563eb; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-size: 1rem; cursor: pointer; font-weight: 600; }
+        button:hover { background: #1d4ed8; }
+        button:disabled { background: #475569; cursor: not-allowed; }
+        .btn-secondary { background: #475569; }
+        .btn-secondary:hover { background: #64748b; }
+        .question-box { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 1.5rem; margin-bottom: 1rem; }
+        .question-box p { font-size: 1.1rem; line-height: 1.6; }
+        .question-number { color: #38bdf8; font-weight: 700; font-size: 0.85rem; text-transform: uppercase; margin-bottom: 0.5rem; }
+        .score-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
+        .score-card { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 1rem; text-align: center; }
+        .score-card .score { font-size: 2rem; font-weight: 700; color: #38bdf8; }
+        .score-card .label { font-size: 0.8rem; color: #94a3b8; margin-top: 0.25rem; }
+        .feedback-section { margin-top: 1.5rem; }
+        .feedback-section h3 { color: #38bdf8; margin-bottom: 0.75rem; }
+        .feedback-item { background: #0f172a; border-left: 3px solid #2563eb; padding: 1rem; margin-bottom: 0.75rem; border-radius: 0 8px 8px 0; }
+        .status { padding: 0.5rem 1rem; border-radius: 6px; background: #1e3a5f; color: #7dd3fc; font-size: 0.85rem; margin-bottom: 1rem; display: inline-block; }
+        .error { background: #3b1219; color: #fca5a5; }
+        .loading { opacity: 0.7; }
+        .skills-list { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
+        .skill-tag { background: #1e3a5f; color: #7dd3fc; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.85rem; }
+        .progress-bar { height: 4px; background: #334155; border-radius: 2px; margin-bottom: 1.5rem; }
+        .progress-fill { height: 100%; background: #2563eb; border-radius: 2px; transition: width 0.3s; }
+        .btn-restart { background: #dc2626; color: white; border: none; padding: 0.6rem 1.2rem; border-radius: 8px; font-size: 0.9rem; cursor: pointer; font-weight: 600; }
+        .btn-restart:hover { background: #b91c1c; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <div>
+                <h1>🎯 Prep Pilot</h1>
+                <h2>AI Mock Interview Agent</h2>
+            </div>
+            <button class="btn-restart" id="restart-btn" onclick="restartSession()" style="display:none;">↺ Restart Interview</button>
+        </header>
+
+        <!-- Step 1: Upload Resume -->
+        <div class="step active" id="step-resume">
+            <label>Upload Your Resume (PDF or DOCX, max 5MB)</label>
+            <input type="file" id="resume-file" accept=".pdf,.docx">
+            <button onclick="uploadResume()">Upload & Start</button>
+            <div id="resume-status"></div>
+        </div>
+
+        <!-- Step 2: Confirm Resume Parse -->
+        <div class="step" id="step-confirm">
+            <label>Extracted from your resume:</label>
+            <div id="parsed-skills" class="skills-list"></div>
+            <div id="parsed-experiences"></div>
+            <button onclick="showModeSelection()">Looks Good — Continue</button>
+        </div>
+
+        <!-- Step 3: Select Mode -->
+        <div class="step" id="step-mode">
+            <label>Select Interview Mode</label>
+            <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+                <button onclick="selectMode('open_practice')">Open Practice</button>
+                <button class="btn-secondary" onclick="selectMode('job_specific')">Job Specific</button>
+            </div>
+            <div id="role-select-container" style="display:none;">
+                <label>Select a Role</label>
+                <select id="role-select"></select>
+                <button onclick="startOpenPractice()">Start Interview</button>
+            </div>
+            <div id="jd-upload-container" style="display:none;">
+                <label>Upload Job Description (PDF, DOCX, or TXT)</label>
+                <input type="file" id="jd-file" accept=".pdf,.docx,.txt">
+                <button onclick="uploadJD()">Upload & Start Interview</button>
+            </div>
+            <div id="mode-status"></div>
+        </div>
+
+        <!-- Step 4: Interview -->
+        <div class="step" id="step-interview">
+            <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+            <div class="question-box">
+                <div class="question-number" id="q-number">Question 1</div>
+                <p id="q-text"></p>
+            </div>
+            <textarea id="answer-input" placeholder="Type your answer here..."></textarea>
+            <button onclick="submitAnswer()">Submit Answer</button>
+            <div id="interview-status"></div>
+        </div>
+
+        <!-- Step 5: Results -->
+        <div class="step" id="step-results">
+            <h2 style="color:#38bdf8; margin-bottom:1rem;">Interview Complete!</h2>
+            <div id="results-content"></div>
+            <button onclick="restartSession()" style="margin-top: 2rem; width: 100%;">🔄 Start New Interview</button>
+        </div>
+    </div>
+
+    <script>
+        const API = 'http://127.0.0.1:8000';
+        let sessionId = null;
+        let questionIndex = 0;
+        let totalQuestions = 0;
+
+        function showStep(id) {
+            document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+
+        function setStatus(elementId, msg, isError = false) {
+            const el = document.getElementById(elementId);
+            el.innerHTML = `<div class="status ${isError ? 'error' : ''}">${msg}</div>`;
+        }
+
+        function restartSession() {
+            sessionId = null;
+            questionIndex = 0;
+            totalQuestions = 0;
+            document.getElementById('resume-file').value = '';
+            document.getElementById('resume-status').innerHTML = '';
+            document.getElementById('parsed-skills').innerHTML = '';
+            document.getElementById('parsed-experiences').innerHTML = '';
+            document.getElementById('mode-status').innerHTML = '';
+            document.getElementById('interview-status').innerHTML = '';
+            document.getElementById('results-content').innerHTML = '';
+            document.getElementById('answer-input').value = '';
+            document.getElementById('role-select-container').style.display = 'none';
+            document.getElementById('jd-upload-container').style.display = 'none';
+            document.getElementById('restart-btn').style.display = 'none';
+            showStep('step-resume');
+        }
+
+        async function uploadResume() {
+            const file = document.getElementById('resume-file').files[0];
+            if (!file) { setStatus('resume-status', 'Please select a file', true); return; }
+
+            setStatus('resume-status', 'Creating session and parsing resume...');
+
+            // Create session
+            const sessionRes = await fetch(`${API}/sessions`, { method: 'POST' });
+            const sessionData = await sessionRes.json();
+            sessionId = sessionData.session_id;
+
+            // Show restart button now that a session is active
+            document.getElementById('restart-btn').style.display = 'inline-block';
+
+            // Upload resume
+            const formData = new FormData();
+            formData.append('file', file);
+            const resumeRes = await fetch(`${API}/sessions/${sessionId}/resume`, { method: 'POST', body: formData });
+
+            if (!resumeRes.ok) {
+                const err = await resumeRes.json();
+                setStatus('resume-status', err.detail || 'Upload failed', true);
+                return;
+            }
+
+            const resumeData = await resumeRes.json();
+
+            // Show parsed data
+            const skillsEl = document.getElementById('parsed-skills');
+            skillsEl.innerHTML = resumeData.skills.map(s => `<span class="skill-tag">${s}</span>`).join('');
+
+            const expEl = document.getElementById('parsed-experiences');
+            expEl.innerHTML = resumeData.experiences.map(e => `<div class="feedback-item"><strong>${e.title}</strong> at ${e.company} (${e.duration})</div>`).join('');
+
+            showStep('step-confirm');
+        }
+
+        function showModeSelection() {
+            showStep('step-mode');
+            // Load roles
+            fetch(`${API}/roles`).then(r => r.json()).then(data => {
+                const select = document.getElementById('role-select');
+                select.innerHTML = data.roles.map(r => `<option value="${r}">${r}</option>`).join('');
+            });
+        }
+
+        function selectMode(mode) {
+            if (mode === 'open_practice') {
+                document.getElementById('role-select-container').style.display = 'block';
+                document.getElementById('jd-upload-container').style.display = 'none';
+            } else {
+                document.getElementById('role-select-container').style.display = 'none';
+                document.getElementById('jd-upload-container').style.display = 'block';
+            }
+        }
+
+        async function startOpenPractice() {
+            const role = document.getElementById('role-select').value;
+            setStatus('mode-status', 'Generating interview questions...');
+
+            const res = await fetch(`${API}/sessions/${sessionId}/mode`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ mode: 'open_practice', role })
+            });
+
+            if (!res.ok) {
+                const err = await res.json();
+                setStatus('mode-status', err.detail || 'Failed to start', true);
+                return;
+            }
+
+            await loadQuestion();
+        }
+
+        async function uploadJD() {
+            const file = document.getElementById('jd-file').files[0];
+            if (!file) { setStatus('mode-status', 'Please select a file', true); return; }
+
+            setStatus('mode-status', 'Selecting mode and uploading job description...');
+
+            // Select job_specific mode first
+            await fetch(`${API}/sessions/${sessionId}/mode`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ mode: 'job_specific' })
+            });
+
+            // Upload JD
+            const formData = new FormData();
+            formData.append('file', file);
+            const res = await fetch(`${API}/sessions/${sessionId}/job-description`, { method: 'POST', body: formData });
+
+            if (!res.ok) {
+                const err = await res.json();
+                setStatus('mode-status', err.detail || 'Failed to upload JD', true);
+                return;
+            }
+
+            await loadQuestion();
+        }
+
+        async function loadQuestion() {
+            const res = await fetch(`${API}/sessions/${sessionId}/questions`);
+            if (!res.ok) {
+                setStatus('interview-status', 'Failed to load question', true);
+                return;
+            }
+            const data = await res.json();
+            questionIndex++;
+            document.getElementById('q-number').textContent = `Question ${questionIndex}`;
+            document.getElementById('q-text').textContent = data.question_text;
+            document.getElementById('answer-input').value = '';
+            showStep('step-interview');
+        }
+
+        async function submitAnswer() {
+            const answer = document.getElementById('answer-input').value.trim();
+            if (!answer) { setStatus('interview-status', 'Please type an answer', true); return; }
+
+            setStatus('interview-status', 'Submitting...');
+
+            const res = await fetch(`${API}/sessions/${sessionId}/answers`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ response_text: answer, input_mode: 'text' })
+            });
+
+            if (!res.ok) {
+                const err = await res.json();
+                setStatus('interview-status', err.detail || 'Submit failed', true);
+                return;
+            }
+
+            const data = await res.json();
+
+            if (data.action === 'conclude') {
+                await concludeSession();
+            } else {
+                // Load next question
+                questionIndex++;
+                document.getElementById('q-number').textContent = `Question ${questionIndex}`;
+                document.getElementById('q-text').textContent = data.next_question.question_text;
+                document.getElementById('answer-input').value = '';
+                document.getElementById('interview-status').innerHTML = '';
+            }
+        }
+
+        async function concludeSession() {
+            setStatus('interview-status', 'Evaluating your interview...');
+
+            const res = await fetch(`${API}/sessions/${sessionId}/conclude`, { method: 'POST' });
+            const data = await res.json();
+
+            let html = '';
+
+            function readinessOutOf100(score) {
+                return score != null ? score * 10 : score;
+            }
+
+            if (data.readiness_score) {
+                html += '<h3 style="margin-bottom:1rem;">Interview Readiness Score (out of 100)</h3>';
+                html += '<div class="score-grid">';
+                html += `<div class="score-card"><div class="score">${readinessOutOf100(data.readiness_score.clarity_of_communication)}</div><div class="label">Clarity</div></div>`;
+                html += `<div class="score-card"><div class="score">${readinessOutOf100(data.readiness_score.technical_accuracy)}</div><div class="label">Technical Accuracy</div></div>`;
+                html += `<div class="score-card"><div class="score">${readinessOutOf100(data.readiness_score.star_method_adherence)}</div><div class="label">STAR Method</div></div>`;
+                html += `<div class="score-card"><div class="score">${readinessOutOf100(data.readiness_score.overall_response_relevancy)}</div><div class="label">Relevancy</div></div>`;
+                html += '</div>';
+            }
+
+            if (data.resume_relevancy) {
+                html += `<div class="score-card" style="margin-bottom:1.5rem;"><div class="score">${data.resume_relevancy.score}</div><div class="label">Resume Relevancy (1-10)</div></div>`;
+
+                // Resume alignment feedback block
+                html += '<div class="feedback-section" style="margin-top:1rem;">';
+                html += '<h3 style="margin-bottom:0.5rem;">Resume Alignment Feedback</h3>';
+                html += '<div id="resume-alignment-overall"></div>';
+                if (data.resume_relevancy.per_question_reasoning && data.resume_relevancy.per_question_reasoning.length) {
+                    html += '<div style="margin-top:0.5rem;"><strong>Specific alignment notes:</strong></div>';
+                    data.resume_relevancy.per_question_reasoning.forEach((detail) => {
+                        html += `<div class="feedback-item" style="background:#0f172a; border-left:3px solid #7c3aed; margin-top:0.5rem;"><strong>Q ${detail.question_id}:</strong> ${detail.reasoning}</div>`;
+                    });
+                }
+
+                // overall alignment summary based on score
+                try {
+                    const rr = Number(data.resume_relevancy.score);
+                    let overallMsg = '';
+                    if (!Number.isNaN(rr)) {
+                        if (rr >= 8) {
+                            overallMsg = 'Your resume is well aligned with the role and responsibilities.';
+                        } else if (rr >= 5) {
+                            overallMsg = 'Your resume has some relevant strengths, but could be more closely tailored to the job duties.';
+                        } else {
+                            overallMsg = 'Your resume is not strongly aligned with this role; consider emphasizing relevant projects, responsibilities, and measurable outcomes.';
+                        }
+                        html += `<div class="feedback-item" style="margin-top:0.5rem;"><strong>Overall alignment:</strong> ${overallMsg}</div>`;
+                    }
+                } catch (e) { /* ignore */ }
+
+                html += '</div>';
+            }
+
+            if (data.message) {
+                html += `<div class="status">${data.message}</div>`;
+            }
+
+            if (data.feedback_report) {
+                html += '<div class="feedback-section"><h3>Feedback</h3>';
+                if (data.feedback_report.improvement_suggestions) {
+                    data.feedback_report.improvement_suggestions.forEach(s => {
+                        html += `<div class="feedback-item"><strong>${s.dimension}:</strong> ${s.suggestion}</div>`;
+                    });
+                }
+                if (data.feedback_report.follow_up_questions) {
+                    html += '<h3 style="margin-top:1rem;">Follow-up Questions to Practice</h3>';
+                    data.feedback_report.follow_up_questions.forEach(q => {
+                        html += `<div class="feedback-item">${q}</div>`;
+                    });
+                }
+                html += '</div>';
+            }
+
+            document.getElementById('results-content').innerHTML = html;
+            showStep('step-results');
+        }
+
+        // --- Theme Loading ---
+        async function loadTheme() {
+            try {
+                const res = await fetch(`${API}/theme`);
+                if (res.ok) {
+                    const theme = await res.json();
+                    applyTheme(theme);
+                }
+            } catch (e) { /* use defaults */ }
+        }
+
+        function applyTheme(theme) {
+            const root = document.documentElement;
+            if (theme.colors) {
+                root.style.setProperty('--bg', theme.colors.background || '#0f172a');
+                root.style.setProperty('--surface', theme.colors.surface || '#1e293b');
+                root.style.setProperty('--primary', theme.colors.primary || '#2563eb');
+                root.style.setProperty('--accent', theme.colors.accent || '#38bdf8');
+                root.style.setProperty('--text', theme.colors.text || '#e2e8f0');
+                root.style.setProperty('--border', theme.colors.border || '#334155');
+                document.body.style.background = theme.colors.background || '#0f172a';
+                document.body.style.color = theme.colors.text || '#e2e8f0';
+                document.querySelectorAll('.step').forEach(el => el.style.background = theme.colors.surface || '#1e293b');
+                document.querySelectorAll('h1').forEach(el => el.style.color = theme.colors.accent || '#38bdf8');
+            }
+            if (theme.layout) {
+                document.querySelector('.container').style.maxWidth = theme.layout.maxWidth || '800px';
+                document.querySelectorAll('.step').forEach(el => {
+                    el.style.borderRadius = theme.layout.borderRadius || '12px';
+                    el.style.padding = theme.layout.panelPadding || '2rem';
+                });
+            }
+            if (theme.header) {
+                const h1 = document.querySelector('h1');
+                const h2 = document.querySelector('h2');
+                if (h1 && theme.header.title) h1.textContent = theme.header.title;
+                if (h2 && theme.header.subtitle) h2.textContent = theme.header.subtitle;
+            }
+            if (theme.sections) {
+                const restartBtn = document.getElementById('restart-btn');
+                if (restartBtn && !theme.sections.showRestartButton) restartBtn.style.display = 'none';
+            }
+        }
+
+        // Listen for live theme updates from the UI editor iframe
+        window.addEventListener('message', (event) => {
+            if (event.data && event.data.type === 'theme-update') {
+                applyTheme(event.data.theme);
+            }
+        });
+
+        // Pre-warm the API connection on page load
+        fetch(`${API}/health`).catch(() => {});
+
+        // --- JD Input Mode Switching ---
+        function showJDFile() {
+            document.getElementById('jd-file-area').style.display = 'block';
+            document.getElementById('jd-link-area').style.display = 'none';
+            document.getElementById('jd-text-area').style.display = 'none';
+            document.getElementById('jd-tab-file').className = '';
+            document.getElementById('jd-tab-link').className = 'btn-secondary';
+            document.getElementById('jd-tab-text').className = 'btn-secondary';
+        }
+        function showJDLink() {
+            document.getElementById('jd-file-area').style.display = 'none';
+            document.getElementById('jd-link-area').style.display = 'block';
+            document.getElementById('jd-text-area').style.display = 'none';
+            document.getElementById('jd-tab-link').className = '';
+            document.getElementById('jd-tab-file').className = 'btn-secondary';
+            document.getElementById('jd-tab-text').className = 'btn-secondary';
+        }
+        function showJDText() {
+            document.getElementById('jd-file-area').style.display = 'none';
+            document.getElementById('jd-link-area').style.display = 'none';
+            document.getElementById('jd-text-area').style.display = 'block';
+            document.getElementById('jd-tab-text').className = '';
+            document.getElementById('jd-tab-file').className = 'btn-secondary';
+            document.getElementById('jd-tab-link').className = 'btn-secondary';
+        }
+
+        async function submitJDLink() {
+            const url = document.getElementById('jd-link-input').value.trim();
+            if (!url) { setStatus('mode-status', 'Please paste a job posting URL', true); return; }
+            setStatus('mode-status', 'Fetching job posting and generating questions...');
+            await fetch(`${API}/sessions/${sessionId}/mode`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mode: 'job_specific' }) });
+            const res = await fetch(`${API}/sessions/${sessionId}/job-description-url`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url }) });
+            if (!res.ok) { const err = await res.json(); setStatus('mode-status', err.detail || 'Failed to fetch job posting', true); return; }
+            await loadQuestion();
+        }
+
+        async function submitJDText() {
+            const text = document.getElementById('jd-text-input').value.trim();
+            if (!text) { setStatus('mode-status', 'Please paste the job description text', true); return; }
+            setStatus('mode-status', 'Parsing job description and generating questions...');
+            await fetch(`${API}/sessions/${sessionId}/mode`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mode: 'job_specific' }) });
+            const blob = new Blob([text], { type: 'text/plain' });
+            const formData = new FormData();
+            formData.append('file', blob, 'job-description.txt');
+            const res = await fetch(`${API}/sessions/${sessionId}/job-description`, { method: 'POST', body: formData });
+            if (!res.ok) { const err = await res.json(); setStatus('mode-status', err.detail || 'Failed to parse job description', true); return; }
+            await loadQuestion();
+        }
+
+        // --- Voice Functions ---
+        async function speakQuestion(text) {
+            try {
+                const res = await fetch(`${API}/test/tts`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text, voice: selectedVoice }) });
+                if (res.ok) { const blob = await res.blob(); const audio = document.getElementById('question-audio'); audio.src = URL.createObjectURL(blob); audio.style.display = 'block'; audio.play(); }
+            } catch (e) { /* TTS failed silently */ }
+        }
+
+        async function toggleMic() { if (micRecording) { stopMic(); } else { startMic(); } }
+
+        async function startMic() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                micRecorder = new MediaRecorder(stream);
+                micChunks = [];
+                micStartTime = performance.now();
+                micRecorder.ondataavailable = (e) => micChunks.push(e.data);
+                micRecorder.onstop = () => { processMicRecording(); stream.getTracks().forEach(t => t.stop()); };
+                micRecorder.start();
+                micRecording = true;
+                document.getElementById('mic-btn').style.background = '#dc2626';
+                document.getElementById('mic-btn').textContent = '⏹';
+                document.getElementById('mic-label').textContent = 'Recording... tap to stop';
+            } catch (e) { setStatus('interview-status', 'Microphone access denied. Use text input.', true); toggleInputMode(); }
+        }
+
+        function stopMic() {
+            if (micRecorder && micRecorder.state === 'recording') {
+                micRecorder.stop(); micRecording = false;
+                document.getElementById('mic-btn').style.background = '#16a34a';
+                document.getElementById('mic-btn').textContent = '🎤';
+                document.getElementById('mic-label').textContent = 'Transcribing...';
+            }
+        }
+
+        async function processMicRecording() {
+            const duration = ((performance.now() - micStartTime) / 1000).toFixed(1);
+            const blob = new Blob(micChunks, { type: 'audio/webm' });
+            const formData = new FormData();
+            formData.append('audio', blob, 'answer.webm');
+            formData.append('duration', duration);
+            try {
+                const res = await fetch(`${API}/test/stt`, { method: 'POST', body: formData });
+                if (!res.ok) { const err = await res.json(); setStatus('interview-status', err.detail || 'Transcription failed', true); document.getElementById('mic-label').textContent = 'Tap to try again'; return; }
+                const data = await res.json();
+                if (!data.text || !data.has_recognizable_words) { setStatus('interview-status', 'Could not understand. Try again or switch to text.', true); document.getElementById('mic-label').textContent = 'Tap to try again'; return; }
+                document.getElementById('transcription-preview').textContent = data.text;
+                document.getElementById('transcription-preview').style.display = 'block';
+                document.getElementById('mic-label').textContent = 'Submitting...';
+                await submitVoiceAnswer(data.text);
+            } catch (e) { setStatus('interview-status', `Error: ${e.message}`, true); document.getElementById('mic-label').textContent = 'Tap to try again'; }
+        }
+
+        async function submitVoiceAnswer(text) {
+            const res = await fetch(`${API}/sessions/${sessionId}/answers`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ response_text: text, input_mode: 'voice' }) });
+            if (!res.ok) { const err = await res.json(); setStatus('interview-status', err.detail || 'Submit failed', true); document.getElementById('mic-label').textContent = 'Tap to answer'; return; }
+            const data = await res.json();
+            if (data.action === 'conclude') {
+                if (data.closing_message) { setStatus('interview-status', data.closing_message, false); await speakQuestion(data.closing_message); await new Promise(r => setTimeout(r, 2000)); }
+                await concludeSession();
+            } else {
+                questionIndex++; document.getElementById('q-number').textContent = `Question ${questionIndex}`;
+                document.getElementById('q-text').textContent = data.next_question.question_text;
+                document.getElementById('transcription-preview').style.display = 'none';
+                document.getElementById('mic-label').textContent = 'Tap to answer with your voice';
+                document.getElementById('interview-status').innerHTML = '';
+                speakQuestion(data.next_question.question_text);
+            }
+        }
+
+        function toggleInputMode() {
+            isVoiceMode = !isVoiceMode;
+            document.getElementById('voice-input-area').style.display = isVoiceMode ? 'block' : 'none';
+            document.getElementById('text-input-area').style.display = isVoiceMode ? 'none' : 'block';
+            document.getElementById('input-mode-toggle').textContent = isVoiceMode ? '⌨️ Switch to text input' : '🎤 Switch to voice input';
+        }
+
+        loadTheme();
+    </script>
+</body>
+</html>

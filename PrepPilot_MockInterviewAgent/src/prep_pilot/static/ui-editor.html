@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prep Pilot - UI Editor</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #1a1a2e; color: #e2e8f0; display: flex; height: 100vh; overflow: hidden; }
+        .editor-panel { width: 400px; background: #16213e; overflow-y: auto; padding: 1.5rem; border-right: 1px solid #334155; flex-shrink: 0; }
+        .preview-panel { flex: 1; display: flex; flex-direction: column; }
+        .preview-tabs { display: flex; background: #0f172a; border-bottom: 1px solid #334155; padding: 0.5rem 1rem 0; }
+        .preview-tab { padding: 0.5rem 1.25rem; border-radius: 6px 6px 0 0; cursor: pointer; font-size: 0.85rem; font-weight: 600; color: #94a3b8; background: transparent; border: none; }
+        .preview-tab.active { background: #1e293b; color: #f59e0b; }
+        .preview-frame-wrap { flex: 1; overflow: hidden; }
+        .preview-frame-wrap iframe { width: 100%; height: 100%; border: none; }
+        h1 { font-size: 1.4rem; color: #f59e0b; margin-bottom: 0.25rem; }
+        h2 { font-size: 0.9rem; color: #94a3b8; margin-bottom: 1rem; }
+        .page-tabs { display: flex; gap: 0.25rem; margin-bottom: 1.25rem; }
+        .page-tab { flex: 1; padding: 0.5rem; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: 700; text-align: center; background: #334155; color: #94a3b8; border: none; }
+        .page-tab.active { background: #f59e0b; color: #0f172a; }
+        .page-editor { display: none; }
+        .page-editor.active { display: block; }
+        .section { margin-bottom: 1.25rem; border-bottom: 1px solid #334155; padding-bottom: 0.75rem; }
+        .section-title { font-size: 0.8rem; font-weight: 700; color: #f59e0b; text-transform: uppercase; margin-bottom: 0.6rem; letter-spacing: 0.05em; }
+        .field { margin-bottom: 0.6rem; }
+        .field label { display: block; font-size: 0.75rem; color: #94a3b8; margin-bottom: 0.2rem; }
+        .field input[type="color"] { width: 36px; height: 28px; border: none; border-radius: 4px; cursor: pointer; vertical-align: middle; }
+        .field input[type="text"] { width: 100%; padding: 0.35rem 0.5rem; border-radius: 4px; border: 1px solid #334155; background: #0f172a; color: #e2e8f0; font-size: 0.8rem; }
+        .field .color-row { display: flex; align-items: center; gap: 0.5rem; }
+        .field .color-row span { font-size: 0.75rem; color: #cbd5e1; font-family: monospace; }
+        .toggle { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.4rem; }
+        .toggle label { font-size: 0.8rem; color: #cbd5e1; }
+        .toggle input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
+        .btn { width: 100%; padding: 0.55rem; border-radius: 6px; border: none; font-weight: 700; cursor: pointer; font-size: 0.85rem; margin-bottom: 0.4rem; }
+        .btn-save { background: #22c55e; color: #0f172a; }
+        .btn-save:hover { background: #16a34a; }
+        .btn-reset { background: #475569; color: #e2e8f0; }
+        .btn-reset:hover { background: #64748b; }
+        .btn-export { background: #2563eb; color: white; }
+        .btn-export:hover { background: #1d4ed8; }
+        .status-msg { font-size: 0.75rem; padding: 0.35rem; border-radius: 4px; margin-top: 0.4rem; text-align: center; }
+        .status-msg.success { background: #0f2e1a; color: #22c55e; }
+        .status-msg.error { background: #3b1219; color: #fca5a5; }
+        .test-badge { display: inline-block; background: #92400e; color: #fbbf24; padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; margin-bottom: 0.5rem; }
+    </style>
+</head>
+<body>
+    <div class="editor-panel">
+        <div class="test-badge">⚠️ Dev Tool — Changes Apply to Live UI</div>
+        <h1>🎨 UI Editor</h1>
+        <h2>Select a page to edit</h2>
+
+        <!-- Page Selector Tabs -->
+        <div class="page-tabs">
+            <button class="page-tab active" onclick="switchPage('main')">Main</button>
+            <button class="page-tab" onclick="switchPage('questions')">Questions</button>
+            <button class="page-tab" onclick="switchPage('evaluation')">Evaluation</button>
+        </div>
+
+        <!-- ===== MAIN PAGE EDITOR ===== -->
+        <div class="page-editor active" id="editor-main">
+            <div class="section">
+                <div class="section-title">Colors</div>
+                <div class="field"><label>Background</label><div class="color-row"><input type="color" id="m-bg" value="#0f172a" oninput="liveUpdate()"><span id="m-bg-hex">#0f172a</span></div></div>
+                <div class="field"><label>Surface (panels)</label><div class="color-row"><input type="color" id="m-surface" value="#1e293b" oninput="liveUpdate()"><span id="m-surface-hex">#1e293b</span></div></div>
+                <div class="field"><label>Primary (buttons)</label><div class="color-row"><input type="color" id="m-primary" value="#2563eb" oninput="liveUpdate()"><span id="m-primary-hex">#2563eb</span></div></div>
+                <div class="field"><label>Accent (headings)</label><div class="color-row"><input type="color" id="m-accent" value="#38bdf8" oninput="liveUpdate()"><span id="m-accent-hex">#38bdf8</span></div></div>
+                <div class="field"><label>Text</label><div class="color-row"><input type="color" id="m-text" value="#e2e8f0" oninput="liveUpdate()"><span id="m-text-hex">#e2e8f0</span></div></div>
+                <div class="field"><label>Border</label><div class="color-row"><input type="color" id="m-border" value="#334155" oninput="liveUpdate()"><span id="m-border-hex">#334155</span></div></div>
+                <div class="field"><label>Restart Button</label><div class="color-row"><input type="color" id="m-restart" value="#dc2626" oninput="liveUpdate()"><span id="m-restart-hex">#dc2626</span></div></div>
+            </div>
+            <div class="section">
+                <div class="section-title">Layout</div>
+                <div class="field"><label>Max Width</label><input type="text" id="m-maxWidth" value="800px" onchange="liveUpdate()"></div>
+                <div class="field"><label>Panel Border Radius</label><input type="text" id="m-borderRadius" value="12px" onchange="liveUpdate()"></div>
+                <div class="field"><label>Panel Padding</label><input type="text" id="m-padding" value="2rem" onchange="liveUpdate()"></div>
+                <div class="field"><label>Button Radius</label><input type="text" id="m-btnRadius" value="8px" onchange="liveUpdate()"></div>
+            </div>
+            <div class="section">
+                <div class="section-title">Sections</div>
+                <div class="toggle"><label>Header</label><input type="checkbox" id="m-showHeader" checked onchange="liveUpdate()"></div>
+                <div class="toggle"><label>Restart Button</label><input type="checkbox" id="m-showRestart" checked onchange="liveUpdate()"></div>
+            </div>
+            <div class="section">
+                <div class="section-title">Header Text</div>
+                <div class="field"><label>Title</label><input type="text" id="m-title" value="🎯 Prep Pilot" onchange="liveUpdate()"></div>
+                <div class="field"><label>Subtitle</label><input type="text" id="m-subtitle" value="AI Mock Interview Agent" onchange="liveUpdate()"></div>
+            </div>
+        </div>
+
+        <!-- ===== QUESTIONS PAGE EDITOR ===== -->
+        <div class="page-editor" id="editor-questions">
+            <div class="section">
+                <div class="section-title">Colors</div>
+                <div class="field"><label>Question Box Background</label><div class="color-row"><input type="color" id="q-boxBg" value="#0f172a" oninput="liveUpdate()"><span id="q-boxBg-hex">#0f172a</span></div></div>
+                <div class="field"><label>Question Box Border</label><div class="color-row"><input type="color" id="q-boxBorder" value="#334155" oninput="liveUpdate()"><span id="q-boxBorder-hex">#334155</span></div></div>
+                <div class="field"><label>Question Number Color</label><div class="color-row"><input type="color" id="q-numColor" value="#38bdf8" oninput="liveUpdate()"><span id="q-numColor-hex">#38bdf8</span></div></div>
+                <div class="field"><label>Question Text Color</label><div class="color-row"><input type="color" id="q-textColor" value="#e2e8f0" oninput="liveUpdate()"><span id="q-textColor-hex">#e2e8f0</span></div></div>
+                <div class="field"><label>Answer Input Background</label><div class="color-row"><input type="color" id="q-inputBg" value="#0f172a" oninput="liveUpdate()"><span id="q-inputBg-hex">#0f172a</span></div></div>
+                <div class="field"><label>Submit Button</label><div class="color-row"><input type="color" id="q-submitBtn" value="#2563eb" oninput="liveUpdate()"><span id="q-submitBtn-hex">#2563eb</span></div></div>
+                <div class="field"><label>Progress Bar Fill</label><div class="color-row"><input type="color" id="q-progressFill" value="#2563eb" oninput="liveUpdate()"><span id="q-progressFill-hex">#2563eb</span></div></div>
+            </div>
+            <div class="section">
+                <div class="section-title">Layout</div>
+                <div class="field"><label>Question Box Padding</label><input type="text" id="q-boxPadding" value="1.5rem" onchange="liveUpdate()"></div>
+                <div class="field"><label>Question Box Radius</label><input type="text" id="q-boxRadius" value="8px" onchange="liveUpdate()"></div>
+                <div class="field"><label>Answer Input Height</label><input type="text" id="q-inputHeight" value="120px" onchange="liveUpdate()"></div>
+            </div>
+            <div class="section">
+                <div class="section-title">Sections</div>
+                <div class="toggle"><label>Progress Bar</label><input type="checkbox" id="q-showProgress" checked onchange="liveUpdate()"></div>
+                <div class="toggle"><label>Question Category Tag</label><input type="checkbox" id="q-showCategory" checked onchange="liveUpdate()"></div>
+                <div class="toggle"><label>Question Number</label><input type="checkbox" id="q-showNumber" checked onchange="liveUpdate()"></div>
+            </div>
+        </div>
+
+        <!-- ===== EVALUATION PAGE EDITOR ===== -->
+        <div class="page-editor" id="editor-evaluation">
+            <div class="section">
+                <div class="section-title">Colors</div>
+                <div class="field"><label>Score Number Color</label><div class="color-row"><input type="color" id="e-scoreColor" value="#38bdf8" oninput="liveUpdate()"><span id="e-scoreColor-hex">#38bdf8</span></div></div>
+                <div class="field"><label>Resume Relevancy Color</label><div class="color-row"><input type="color" id="e-relevancyColor" value="#f59e0b" oninput="liveUpdate()"><span id="e-relevancyColor-hex">#f59e0b</span></div></div>
+                <div class="field"><label>Score Card Background</label><div class="color-row"><input type="color" id="e-cardBg" value="#0f172a" oninput="liveUpdate()"><span id="e-cardBg-hex">#0f172a</span></div></div>
+                <div class="field"><label>Score Card Border</label><div class="color-row"><input type="color" id="e-cardBorder" value="#334155" oninput="liveUpdate()"><span id="e-cardBorder-hex">#334155</span></div></div>
+                <div class="field"><label>Feedback Item Border</label><div class="color-row"><input type="color" id="e-feedbackBorder" value="#2563eb" oninput="liveUpdate()"><span id="e-feedbackBorder-hex">#2563eb</span></div></div>
+                <div class="field"><label>Section Heading Color</label><div class="color-row"><input type="color" id="e-headingColor" value="#38bdf8" oninput="liveUpdate()"><span id="e-headingColor-hex">#38bdf8</span></div></div>
+            </div>
+            <div class="section">
+                <div class="section-title">Layout</div>
+                <div class="field"><label>Score Grid Columns</label><input type="text" id="e-gridCols" value="1fr 1fr" onchange="liveUpdate()"></div>
+                <div class="field"><label>Score Card Padding</label><input type="text" id="e-cardPadding" value="1.25rem" onchange="liveUpdate()"></div>
+                <div class="field"><label>Score Font Size</label><input type="text" id="e-scoreFontSize" value="2.5rem" onchange="liveUpdate()"></div>
+                <div class="field"><label>Feedback Item Padding</label><input type="text" id="e-feedbackPadding" value="1rem" onchange="liveUpdate()"></div>
+            </div>
+            <div class="section">
+                <div class="section-title">Sections</div>
+                <div class="toggle"><label>Readiness Scores</label><input type="checkbox" id="e-showReadiness" checked onchange="liveUpdate()"></div>
+                <div class="toggle"><label>Resume Relevancy</label><input type="checkbox" id="e-showRelevancy" checked onchange="liveUpdate()"></div>
+                <div class="toggle"><label>Score Reasoning</label><input type="checkbox" id="e-showReasoning" checked onchange="liveUpdate()"></div>
+                <div class="toggle"><label>Improvement Suggestions</label><input type="checkbox" id="e-showSuggestions" checked onchange="liveUpdate()"></div>
+                <div class="toggle"><label>Improved Answers</label><input type="checkbox" id="e-showImproved" checked onchange="liveUpdate()"></div>
+                <div class="toggle"><label>Follow-up Questions</label><input type="checkbox" id="e-showFollowups" checked onchange="liveUpdate()"></div>
+                <div class="toggle"><label>Start New Interview Button</label><input type="checkbox" id="e-showNewBtn" checked onchange="liveUpdate()"></div>
+            </div>
+        </div>
+
+        <!-- ===== ACTIONS (always visible) ===== -->
+        <div class="section" style="margin-top: 1rem;">
+            <div class="section-title">Actions</div>
+            <button class="btn btn-save" onclick="saveTheme()">💾 Save to Live UI</button>
+            <button class="btn btn-export" onclick="exportTheme()">📋 Export Theme JSON</button>
+            <button class="btn btn-reset" onclick="resetTheme()">↺ Reset to Defaults</button>
+            <div id="action-status"></div>
+        </div>
+    </div>
+
+    <!-- Preview Panel -->
+    <div class="preview-panel">
+        <div class="preview-tabs">
+            <button class="preview-tab active" id="ptab-main" onclick="switchPreview('main')">Main Page</button>
+            <button class="preview-tab" id="ptab-questions" onclick="switchPreview('questions')">Questions</button>
+            <button class="preview-tab" id="ptab-evaluation" onclick="switchPreview('evaluation')">Evaluation</button>
+        </div>
+        <div class="preview-frame-wrap">
+            <iframe id="preview-frame" src="/"></iframe>
+        </div>
+    </div>
+
+    <script>
+        const API = 'http://127.0.0.1:8000';
+        let activePage = 'main';
+
+        // --- Page/Preview Switching ---
+        function switchPage(page) {
+            activePage = page;
+            document.querySelectorAll('.page-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.page-editor').forEach(e => e.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById(`editor-${page}`).classList.add('active');
+            switchPreview(page);
+        }
+
+        function switchPreview(page) {
+            document.querySelectorAll('.preview-tab').forEach(t => t.classList.remove('active'));
+            document.getElementById(`ptab-${page}`).classList.add('active');
+            const iframe = document.getElementById('preview-frame');
+            if (page === 'main') iframe.src = '/';
+            else if (page === 'questions') iframe.src = '/preview/questions';
+            else if (page === 'evaluation') iframe.src = '/preview/evaluation';
+        }
+
+        // --- Gather full theme ---
+        function gatherTheme() {
+            return {
+                main: {
+                    colors: { background: v('m-bg'), surface: v('m-surface'), primary: v('m-primary'), accent: v('m-accent'), text: v('m-text'), border: v('m-border'), restart: v('m-restart') },
+                    layout: { maxWidth: v('m-maxWidth'), borderRadius: v('m-borderRadius'), padding: v('m-padding'), buttonRadius: v('m-btnRadius') },
+                    sections: { showHeader: c('m-showHeader'), showRestart: c('m-showRestart') },
+                    header: { title: v('m-title'), subtitle: v('m-subtitle') }
+                },
+                questions: {
+                    colors: { boxBg: v('q-boxBg'), boxBorder: v('q-boxBorder'), numColor: v('q-numColor'), textColor: v('q-textColor'), inputBg: v('q-inputBg'), submitBtn: v('q-submitBtn'), progressFill: v('q-progressFill') },
+                    layout: { boxPadding: v('q-boxPadding'), boxRadius: v('q-boxRadius'), inputHeight: v('q-inputHeight') },
+                    sections: { showProgress: c('q-showProgress'), showCategory: c('q-showCategory'), showNumber: c('q-showNumber') }
+                },
+                evaluation: {
+                    colors: { scoreColor: v('e-scoreColor'), relevancyColor: v('e-relevancyColor'), cardBg: v('e-cardBg'), cardBorder: v('e-cardBorder'), feedbackBorder: v('e-feedbackBorder'), headingColor: v('e-headingColor') },
+                    layout: { gridCols: v('e-gridCols'), cardPadding: v('e-cardPadding'), scoreFontSize: v('e-scoreFontSize'), feedbackPadding: v('e-feedbackPadding') },
+                    sections: { showReadiness: c('e-showReadiness'), showRelevancy: c('e-showRelevancy'), showReasoning: c('e-showReasoning'), showSuggestions: c('e-showSuggestions'), showImproved: c('e-showImproved'), showFollowups: c('e-showFollowups'), showNewBtn: c('e-showNewBtn') }
+                }
+            };
+        }
+
+        function v(id) { return document.getElementById(id).value; }
+        function c(id) { return document.getElementById(id).checked; }
+
+        // --- Live Update ---
+        function liveUpdate() {
+            document.querySelectorAll('input[type="color"]').forEach(el => {
+                const hexEl = document.getElementById(el.id + '-hex');
+                if (hexEl) hexEl.textContent = el.value;
+            });
+            const theme = gatherTheme();
+            const iframe = document.getElementById('preview-frame');
+            if (iframe.contentWindow) {
+                iframe.contentWindow.postMessage({ type: 'theme-update', theme, page: activePage }, '*');
+            }
+        }
+
+        // --- Save/Export/Reset ---
+        async function saveTheme() {
+            const theme = gatherTheme();
+            try {
+                const res = await fetch(`${API}/theme`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(theme) });
+                if (res.ok) {
+                    showStatus('✓ Saved! Changes are live.', 'success');
+                    document.getElementById('preview-frame').contentWindow.location.reload();
+                } else { showStatus('✗ Save failed', 'error'); }
+            } catch (e) { showStatus('✗ Could not connect', 'error'); }
+        }
+
+        function exportTheme() {
+            const json = JSON.stringify(gatherTheme(), null, 2);
+            navigator.clipboard.writeText(json).then(() => showStatus('✓ Copied to clipboard', 'success'));
+        }
+
+        async function resetTheme() {
+            const defaults = getDefaults();
+            applyToEditor(defaults);
+            await fetch(`${API}/theme`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(defaults) });
+            document.getElementById('preview-frame').contentWindow.location.reload();
+            showStatus('✓ Reset to defaults', 'success');
+        }
+
+        function getDefaults() {
+            return {
+                main: { colors: { background: '#0f172a', surface: '#1e293b', primary: '#2563eb', accent: '#38bdf8', text: '#e2e8f0', border: '#334155', restart: '#dc2626' }, layout: { maxWidth: '800px', borderRadius: '12px', padding: '2rem', buttonRadius: '8px' }, sections: { showHeader: true, showRestart: true }, header: { title: '🎯 Prep Pilot', subtitle: 'AI Mock Interview Agent' } },
+                questions: { colors: { boxBg: '#0f172a', boxBorder: '#334155', numColor: '#38bdf8', textColor: '#e2e8f0', inputBg: '#0f172a', submitBtn: '#2563eb', progressFill: '#2563eb' }, layout: { boxPadding: '1.5rem', boxRadius: '8px', inputHeight: '120px' }, sections: { showProgress: true, showCategory: true, showNumber: true } },
+                evaluation: { colors: { scoreColor: '#38bdf8', relevancyColor: '#f59e0b', cardBg: '#0f172a', cardBorder: '#334155', feedbackBorder: '#2563eb', headingColor: '#38bdf8' }, layout: { gridCols: '1fr 1fr', cardPadding: '1.25rem', scoreFontSize: '2.5rem', feedbackPadding: '1rem' }, sections: { showReadiness: true, showRelevancy: true, showReasoning: true, showSuggestions: true, showImproved: true, showFollowups: true, showNewBtn: true } }
+            };
+        }
+
+        function applyToEditor(theme) {
+            if (theme.main) {
+                setV('m-bg', theme.main.colors.background); setV('m-surface', theme.main.colors.surface);
+                setV('m-primary', theme.main.colors.primary); setV('m-accent', theme.main.colors.accent);
+                setV('m-text', theme.main.colors.text); setV('m-border', theme.main.colors.border);
+                setV('m-restart', theme.main.colors.restart);
+                setV('m-maxWidth', theme.main.layout.maxWidth); setV('m-borderRadius', theme.main.layout.borderRadius);
+                setV('m-padding', theme.main.layout.padding); setV('m-btnRadius', theme.main.layout.buttonRadius);
+                setC('m-showHeader', theme.main.sections.showHeader); setC('m-showRestart', theme.main.sections.showRestart);
+                setV('m-title', theme.main.header.title); setV('m-subtitle', theme.main.header.subtitle);
+            }
+            if (theme.questions) {
+                setV('q-boxBg', theme.questions.colors.boxBg); setV('q-boxBorder', theme.questions.colors.boxBorder);
+                setV('q-numColor', theme.questions.colors.numColor); setV('q-textColor', theme.questions.colors.textColor);
+                setV('q-inputBg', theme.questions.colors.inputBg); setV('q-submitBtn', theme.questions.colors.submitBtn);
+                setV('q-progressFill', theme.questions.colors.progressFill);
+                setV('q-boxPadding', theme.questions.layout.boxPadding); setV('q-boxRadius', theme.questions.layout.boxRadius);
+                setV('q-inputHeight', theme.questions.layout.inputHeight);
+                setC('q-showProgress', theme.questions.sections.showProgress); setC('q-showCategory', theme.questions.sections.showCategory);
+                setC('q-showNumber', theme.questions.sections.showNumber);
+            }
+            if (theme.evaluation) {
+                setV('e-scoreColor', theme.evaluation.colors.scoreColor); setV('e-relevancyColor', theme.evaluation.colors.relevancyColor);
+                setV('e-cardBg', theme.evaluation.colors.cardBg); setV('e-cardBorder', theme.evaluation.colors.cardBorder);
+                setV('e-feedbackBorder', theme.evaluation.colors.feedbackBorder); setV('e-headingColor', theme.evaluation.colors.headingColor);
+                setV('e-gridCols', theme.evaluation.layout.gridCols); setV('e-cardPadding', theme.evaluation.layout.cardPadding);
+                setV('e-scoreFontSize', theme.evaluation.layout.scoreFontSize); setV('e-feedbackPadding', theme.evaluation.layout.feedbackPadding);
+                setC('e-showReadiness', theme.evaluation.sections.showReadiness); setC('e-showRelevancy', theme.evaluation.sections.showRelevancy);
+                setC('e-showReasoning', theme.evaluation.sections.showReasoning); setC('e-showSuggestions', theme.evaluation.sections.showSuggestions);
+                setC('e-showImproved', theme.evaluation.sections.showImproved); setC('e-showFollowups', theme.evaluation.sections.showFollowups);
+                setC('e-showNewBtn', theme.evaluation.sections.showNewBtn);
+            }
+            // Update hex displays
+            document.querySelectorAll('input[type="color"]').forEach(el => {
+                const hexEl = document.getElementById(el.id + '-hex');
+                if (hexEl) hexEl.textContent = el.value;
+            });
+        }
+
+        function setV(id, val) { const el = document.getElementById(id); if (el && val !== undefined) el.value = val; }
+        function setC(id, val) { const el = document.getElementById(id); if (el && val !== undefined) el.checked = val; }
+
+        function showStatus(msg, type) {
+            const el = document.getElementById('action-status');
+            el.innerHTML = `<div class="status-msg ${type}">${msg}</div>`;
+            setTimeout(() => el.innerHTML = '', 3000);
+        }
+
+        // --- Load saved theme ---
+        async function loadTheme() {
+            try {
+                const res = await fetch(`${API}/theme`);
+                if (res.ok) { const theme = await res.json(); applyToEditor(theme); }
+            } catch (e) { /* defaults */ }
+        }
+        loadTheme();
+    </script>
+</body>
+</html>

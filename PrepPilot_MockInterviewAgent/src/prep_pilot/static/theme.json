@@ -1,0 +1,73 @@
+{
+  "main": {
+    "colors": {
+      "background": "#0f172a",
+      "surface": "#1e293b",
+      "primary": "#2563eb",
+      "accent": "#38bdf8",
+      "text": "#e2e8f0",
+      "border": "#334155",
+      "restart": "#dc2626"
+    },
+    "layout": {
+      "maxWidth": "800px",
+      "borderRadius": "12px",
+      "padding": "2rem",
+      "buttonRadius": "8px"
+    },
+    "sections": {
+      "showHeader": true,
+      "showRestart": true
+    },
+    "header": {
+      "title": " Prep Pilot",
+      "subtitle": "AI Mock Interview Agent"
+    }
+  },
+  "questions": {
+    "colors": {
+      "boxBg": "#0f172a",
+      "boxBorder": "#334155",
+      "numColor": "#38bdf8",
+      "textColor": "#e2e8f0",
+      "inputBg": "#0f172a",
+      "submitBtn": "#2563eb",
+      "progressFill": "#2563eb"
+    },
+    "layout": {
+      "boxPadding": "1.5rem",
+      "boxRadius": "8px",
+      "inputHeight": "120px"
+    },
+    "sections": {
+      "showProgress": true,
+      "showCategory": true,
+      "showNumber": true
+    }
+  },
+  "evaluation": {
+    "colors": {
+      "scoreColor": "#38bdf8",
+      "relevancyColor": "#f59e0b",
+      "cardBg": "#0f172a",
+      "cardBorder": "#334155",
+      "feedbackBorder": "#2563eb",
+      "headingColor": "#38bdf8"
+    },
+    "layout": {
+      "gridCols": "1fr 1fr",
+      "cardPadding": "1.25rem",
+      "scoreFontSize": "2.5rem",
+      "feedbackPadding": "1rem"
+    },
+    "sections": {
+      "showReadiness": true,
+      "showRelevancy": true,
+      "showReasoning": true,
+      "showSuggestions": true,
+      "showImproved": true,
+      "showFollowups": true,
+      "showNewBtn": true
+    }
+  }
+}
