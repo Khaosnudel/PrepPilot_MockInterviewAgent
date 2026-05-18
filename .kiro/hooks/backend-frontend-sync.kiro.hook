@@ -1,0 +1,17 @@
+{
+  "enabled": true,
+  "name": "Backend-Frontend Sync Check",
+  "description": "After any Python file in the services or api directory is edited, verifies that all backend-to-frontend connections are intact: checks that all fetch() URLs in index.html have matching backend endpoints, all required JS variables are declared, and no dead code references non-existent DOM elements.",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "**/services/*.py",
+      "**/api/*.py"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Quickly verify the backend-frontend connection is intact after this file change. Check: 1) Read src/prep_pilot/api/routes.py and list all endpoint paths. 2) Read src/prep_pilot/static/index.html and find all fetch() URLs. 3) Confirm every frontend fetch URL has a matching backend endpoint. 4) If any mismatch is found, report it clearly. If everything matches, say nothing."
+  }
+}

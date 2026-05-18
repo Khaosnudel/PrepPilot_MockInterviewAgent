@@ -1,0 +1,16 @@
+{
+  "enabled": true,
+  "name": "HTML Integrity Check",
+  "description": "After any HTML file in the static directory is edited, automatically checks for stray content after the closing html tag and alerts if found.",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "**/static/*.html"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Check the edited HTML file for stray content after the closing </html> tag. Read the file and verify: 1) It ends with </html> as the last non-whitespace content, 2) There is exactly one <script> and one </script> tag, 3) No code appears after </html>. If stray content is found, immediately truncate the file at the </html> line and report what was removed. If the file is clean, say nothing."
+  }
+}

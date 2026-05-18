@@ -8,11 +8,11 @@
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #1a1a2e; color: #e2e8f0; display: flex; height: 100vh; overflow: hidden; }
         .editor-panel { width: 400px; background: #16213e; overflow-y: auto; padding: 1.5rem; border-right: 1px solid #334155; flex-shrink: 0; }
-        .preview-panel { flex: 1; display: flex; flex-direction: column; }
+        .preview-panel { flex: 1; display: flex; flex-direction: column; position: relative; }
         .preview-tabs { display: flex; background: #0f172a; border-bottom: 1px solid #334155; padding: 0.5rem 1rem 0; }
         .preview-tab { padding: 0.5rem 1.25rem; border-radius: 6px 6px 0 0; cursor: pointer; font-size: 0.85rem; font-weight: 600; color: #94a3b8; background: transparent; border: none; }
         .preview-tab.active { background: #1e293b; color: #f59e0b; }
-        .preview-frame-wrap { flex: 1; overflow: hidden; }
+        .preview-frame-wrap { flex: 1; overflow: hidden; position: relative; }
         .preview-frame-wrap iframe { width: 100%; height: 100%; border: none; }
         h1 { font-size: 1.4rem; color: #f59e0b; margin-bottom: 0.25rem; }
         h2 { font-size: 0.9rem; color: #94a3b8; margin-bottom: 1rem; }
@@ -26,7 +26,7 @@
         .field { margin-bottom: 0.6rem; }
         .field label { display: block; font-size: 0.75rem; color: #94a3b8; margin-bottom: 0.2rem; }
         .field input[type="color"] { width: 36px; height: 28px; border: none; border-radius: 4px; cursor: pointer; vertical-align: middle; }
-        .field input[type="text"] { width: 100%; padding: 0.35rem 0.5rem; border-radius: 4px; border: 1px solid #334155; background: #0f172a; color: #e2e8f0; font-size: 0.8rem; }
+        .field input[type="text"], .field input[type="number"] { width: 100%; padding: 0.35rem 0.5rem; border-radius: 4px; border: 1px solid #334155; background: #0f172a; color: #e2e8f0; font-size: 0.8rem; }
         .field .color-row { display: flex; align-items: center; gap: 0.5rem; }
         .field .color-row span { font-size: 0.75rem; color: #cbd5e1; font-family: monospace; }
         .toggle { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.4rem; }
@@ -39,10 +39,31 @@
         .btn-reset:hover { background: #64748b; }
         .btn-export { background: #2563eb; color: white; }
         .btn-export:hover { background: #1d4ed8; }
+        .btn-element { background: #7c3aed; color: white; font-size: 0.8rem; padding: 0.45rem 0.6rem; }
+        .btn-element:hover { background: #6d28d9; }
         .status-msg { font-size: 0.75rem; padding: 0.35rem; border-radius: 4px; margin-top: 0.4rem; text-align: center; }
         .status-msg.success { background: #0f2e1a; color: #22c55e; }
         .status-msg.error { background: #3b1219; color: #fca5a5; }
         .test-badge { display: inline-block; background: #92400e; color: #fbbf24; padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; margin-bottom: 0.5rem; }
+        /* Canvas overlay */
+        #canvas-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            pointer-events: auto;
+            z-index: 10;
+            overflow: hidden;
+        }
+        /* Element toolbar buttons row */
+        .element-toolbar-row { display: flex; gap: 0.3rem; margin-bottom: 0.6rem; }
+        .element-toolbar-row .btn-element { flex: 1; }
+        /* Grid controls */
+        .grid-controls { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.6rem; }
+        .grid-controls label { font-size: 0.75rem; color: #94a3b8; white-space: nowrap; }
+        .grid-controls input[type="number"] { width: 60px; padding: 0.25rem 0.4rem; border-radius: 4px; border: 1px solid #334155; background: #0f172a; color: #e2e8f0; font-size: 0.75rem; }
+        .grid-controls input[type="checkbox"] { width: 14px; height: 14px; cursor: pointer; }
+        .grid-error { font-size: 0.65rem; color: #fca5a5; margin-top: 0.2rem; }
+        /* Properties inspector section */
+        #properties-inspector-panel { min-height: 40px; }
     </style>
 </head>
 <body>
@@ -50,6 +71,29 @@
         <div class="test-badge">⚠️ Dev Tool — Changes Apply to Live UI</div>
         <h1>🎨 UI Editor</h1>
         <h2>Select a page to edit</h2>
+
+        <!-- ===== ELEMENT TOOLBAR (populated by ElementToolbar class) ===== -->
+        <div id="element-toolbar-container"></div>
+
+        <!-- ===== GRID CONTROLS ===== -->
+        <div class="section">
+            <div class="section-title">Grid</div>
+            <div class="grid-controls">
+                <input type="checkbox" id="grid-toggle">
+                <label for="grid-toggle">Show Grid</label>
+                <label for="grid-spacing">Spacing:</label>
+                <input type="number" id="grid-spacing" value="16" min="4" max="128" step="1">
+            </div>
+            <div class="grid-error" id="grid-error" style="display:none;"></div>
+        </div>
+
+        <!-- ===== PROPERTIES INSPECTOR ===== -->
+        <div class="section">
+            <div class="section-title">Element Properties</div>
+            <div id="properties-inspector-panel">
+                <p style="font-size:0.75rem; color:#64748b; font-style:italic;">Select an element on the canvas to edit its properties.</p>
+            </div>
+        </div>
 
         <!-- Page Selector Tabs -->
         <div class="page-tabs">
@@ -164,10 +208,29 @@
         </div>
         <div class="preview-frame-wrap">
             <iframe id="preview-frame" src="/"></iframe>
+            <!-- Canvas Overlay for element manipulation -->
+            <div id="canvas-overlay"></div>
         </div>
     </div>
 
+    <!-- Load JavaScript modules in dependency order -->
+    <script src="/static/js/validators.js"></script>
+    <script src="/static/js/geometry.js"></script>
+    <script src="/static/js/element-registry.js"></script>
+    <script src="/static/js/canvas-renderer.js"></script>
+    <script src="/static/js/grid-overlay.js"></script>
+    <script src="/static/js/interaction-handler.js"></script>
+    <script src="/static/js/properties-inspector.js"></script>
+    <script src="/static/js/icon-picker.js"></script>
+    <script src="/static/js/image-uploader.js"></script>
+    <script src="/static/js/inline-text-editor.js"></script>
+    <script src="/static/js/undo-redo-manager.js"></script>
+    <script src="/static/js/undo-redo-integration.js"></script>
+    <script src="/static/js/element-toolbar.js"></script>
+    <script src="/static/js/grid-controls.js"></script>
+
     <script>
+        // ─── Existing Theme Editor Logic ─────────────────────────────────────
         const API = 'http://127.0.0.1:8000';
         let activePage = 'main';
 
@@ -228,9 +291,13 @@
             }
         }
 
-        // --- Save/Export/Reset ---
+        // --- Save/Export/Reset (extended with elements) ---
         async function saveTheme() {
             const theme = gatherTheme();
+            // Include elements from the registry
+            if (window._editorRegistry) {
+                theme.elements = window._editorRegistry.serialize();
+            }
             try {
                 const res = await fetch(`${API}/theme`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(theme) });
                 if (res.ok) {
@@ -241,13 +308,36 @@
         }
 
         function exportTheme() {
-            const json = JSON.stringify(gatherTheme(), null, 2);
+            const theme = gatherTheme();
+            // Include elements in export
+            if (window._editorRegistry) {
+                theme.elements = window._editorRegistry.serialize();
+            }
+            const json = JSON.stringify(theme, null, 2);
             navigator.clipboard.writeText(json).then(() => showStatus('✓ Copied to clipboard', 'success'));
         }
 
         async function resetTheme() {
+            if (!confirm('Reset to defaults? This will remove all elements and restore default theme settings.')) {
+                return; // User cancelled
+            }
             const defaults = getDefaults();
             applyToEditor(defaults);
+            // Clear all elements
+            if (window._editorRegistry) {
+                const allElements = window._editorRegistry.getAllElements();
+                const allIds = allElements.map(el => el.id);
+                if (allIds.length > 0) {
+                    window._editorRegistry.removeElements(allIds);
+                }
+                if (window._editorCanvas) {
+                    window._editorCanvas.renderAll();
+                }
+                if (window._editorInspector) {
+                    window._editorInspector.clear();
+                }
+            }
+            defaults.elements = [];
             await fetch(`${API}/theme`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(defaults) });
             document.getElementById('preview-frame').contentWindow.location.reload();
             showStatus('✓ Reset to defaults', 'success');
@@ -309,14 +399,138 @@
             setTimeout(() => el.innerHTML = '', 3000);
         }
 
-        // --- Load saved theme ---
+        // ─── Dynamic UI Editor Initialization ────────────────────────────────
+
+        /**
+         * Initialize all dynamic editor components on page load.
+         * Wires dependencies between modules in the correct order.
+         */
+        function initDynamicEditor() {
+            const overlayEl = document.getElementById('canvas-overlay');
+            const inspectorPanel = document.getElementById('properties-inspector-panel');
+
+            // 1. Create Element Registry (central state store)
+            const registry = new ElementRegistry();
+            window._editorRegistry = registry;
+
+            // 2. Create Canvas Renderer (renders elements on overlay)
+            const canvas = new CanvasRenderer(overlayEl, registry);
+            window._editorCanvas = canvas;
+
+            // 3. Create Grid Overlay
+            const gridOverlay = new GridOverlay(overlayEl);
+            window._editorGrid = gridOverlay;
+
+            // 4. Create Interaction Handler (drag, resize, selection)
+            const interactionHandler = new InteractionHandler(canvas, registry);
+            window._editorInteraction = interactionHandler;
+
+            // 5. Create Properties Inspector (sidebar property editing)
+            const inspector = new PropertiesInspector(inspectorPanel, registry);
+            window._editorInspector = inspector;
+
+            // 6. Create Inline Text Editor
+            const inlineTextEditor = new InlineTextEditor(overlayEl, registry, canvas);
+            window._editorTextEditor = inlineTextEditor;
+
+            // 7. Create Undo/Redo Manager (max 50 entries)
+            const undoRedoManager = new UndoRedoManager(50);
+            window._editorUndoRedo = undoRedoManager;
+
+            // 8. Create Undo/Redo Integration (wires undo/redo with registry and interactions)
+            const undoRedoIntegration = new UndoRedoIntegration(registry, undoRedoManager, canvas, interactionHandler);
+            window._editorUndoRedoIntegration = undoRedoIntegration;
+
+            // 9. Create Icon Picker and Image Uploader
+            const iconPicker = new IconPicker();
+            const imageUploader = new ImageUploader();
+
+            // 10. Create Element Toolbar (Add Icon/Image/Text buttons)
+            const toolbar = new ElementToolbar({
+                containerElement: document.getElementById('element-toolbar-container'),
+                registry: registry,
+                canvasRenderer: canvas,
+                iconPicker: iconPicker,
+                imageUploader: imageUploader,
+                scaleToFitFn: (typeof scaleToFit === 'function') ? scaleToFit : null
+            });
+            window._editorToolbar = toolbar;
+
+            // 11. Wire registry onChange to re-render canvas and update inspector
+            registry.onChange(function() {
+                canvas.renderAll();
+                const selectedIds = registry.getSelectedIds();
+                if (selectedIds.length === 1) {
+                    inspector.showForElement(selectedIds[0]);
+                    canvas.showHandles(selectedIds);
+                } else if (selectedIds.length > 1) {
+                    inspector.showForMultiSelect(selectedIds);
+                    canvas.showMultiSelectBoundingBox(selectedIds);
+                } else {
+                    inspector.clear();
+                    canvas.hideHandles();
+                }
+            });
+
+            // 12. Wire Grid Controls
+            const gridToggle = document.getElementById('grid-toggle');
+            const gridSpacingInput = document.getElementById('grid-spacing');
+            const gridErrorEl = document.getElementById('grid-error');
+
+            gridToggle.addEventListener('change', function() {
+                if (this.checked) {
+                    const spacing = parseInt(gridSpacingInput.value, 10) || 16;
+                    gridOverlay.showGrid(spacing);
+                    interactionHandler.setSnapEnabled(true);
+                    interactionHandler.setGridSpacing(spacing);
+                } else {
+                    gridOverlay.hideGrid();
+                    interactionHandler.setSnapEnabled(false);
+                }
+            });
+
+            gridSpacingInput.addEventListener('change', function() {
+                const val = parseInt(this.value, 10);
+                const validation = (typeof validateGridSpacing === 'function') ? validateGridSpacing(val) : null;
+                if (validation && !validation.valid) {
+                    gridErrorEl.textContent = validation.error || 'Grid spacing must be an integer between 4 and 128.';
+                    gridErrorEl.style.display = 'block';
+                    return;
+                }
+                gridErrorEl.style.display = 'none';
+                if (gridToggle.checked) {
+                    gridOverlay.updateGridSpacing(val);
+                    interactionHandler.setGridSpacing(val);
+                }
+            });
+
+            // 13. Initial render
+            canvas.renderAll();
+        }
+
+        // ─── Load saved theme and elements ───────────────────────────────────
         async function loadTheme() {
             try {
                 const res = await fetch(`${API}/theme`);
-                if (res.ok) { const theme = await res.json(); applyToEditor(theme); }
+                if (res.ok) {
+                    const theme = await res.json();
+                    applyToEditor(theme);
+                    // Load elements if present
+                    if (theme.elements && Array.isArray(theme.elements) && window._editorRegistry) {
+                        window._editorRegistry.deserialize(theme.elements);
+                        if (window._editorCanvas) {
+                            window._editorCanvas.renderAll();
+                        }
+                    }
+                }
             } catch (e) { /* defaults */ }
         }
-        loadTheme();
+
+        // Initialize dynamic editor components, then load theme
+        document.addEventListener('DOMContentLoaded', function() {
+            initDynamicEditor();
+            loadTheme();
+        });
     </script>
 </body>
 </html>

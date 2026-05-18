@@ -1,0 +1,16 @@
+{
+  "enabled": true,
+  "name": "Frontend Integrity Check",
+  "description": "After any HTML file in the static directory is edited, verifies that all JavaScript functions referenced in onclick handlers and fetch callbacks actually exist in the script, and that all DOM element IDs referenced in JavaScript exist in the HTML.",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "**/static/index.html"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "After this edit to index.html, verify frontend integrity: 1) Check the file ends with </html> as the last non-whitespace content — if stray code exists after it, truncate immediately. 2) Check that all functions called in onclick=\"\" handlers exist as function declarations in the script. 3) Check that key DOM IDs referenced in getElementById() exist in the HTML (spot check: mic-btn, voice-options, question-audio, transcription-preview, voice-input-area, text-input-area, jd-upload-container). 4) Check that all required variables are declared (sessionId, selectedVoice, micRecording, micRecorder, micChunks, micStartTime, isVoiceMode, availableVoices). Report any issues found and fix them. If clean, say nothing."
+  }
+}
